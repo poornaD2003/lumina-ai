@@ -1,0 +1,56 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Prisma 7: connection URLs live in prisma.config.ts (for the CLI) and are
+// passed as a driver adapter to PrismaClient (for the app). The datasource
+// block only declares the provider.
+datasource db {
+  provider = "sqlite"
+}
+
+model Customer {
+  id              Int      @id @default(autoincrement())
+  name            String
+  email           String   @unique
+  segment         String   // Enterprise, SMB, Startup, Consumer
+  region          String   // North, South, East, West
+  lifetimeValue   Float
+  acquisitionDate DateTime
+  isActive        Boolean  @default(true)
+  sales           Sale[]
+}
+
+model Product {
+  id            Int     @id @default(autoincrement())
+  name          String
+  sku           String  @unique
+  category      String  // Electronics, Software, Services, Hardware
+  unitPrice     Float
+  costPrice     Float
+  stockQuantity Int
+  reorderLevel  Int     @default(10)
+  sales         Sale[]
+}
+
+model Sale {
+  id          Int      @id @default(autoincrement())
+  customerId  Int
+  productId   Int
+  quantity    Int
+  unitPrice   Float
+  totalAmount Float
+  saleDate    DateTime
+  region      String
+  customer    Customer @relation(fields: [customerId], references: [id])
+  product     Product  @relation(fields: [productId], references: [id])
+}
+
+model FinancialRecord {
+  id          Int      @id @default(autoincrement())
+  recordDate  DateTime
+  recordType  String   // Revenue, Expense, COGS, Tax
+  category    String   // Salaries, Marketing, Rent, COGS, etc.
+  amount      Float
+  description String?
+}

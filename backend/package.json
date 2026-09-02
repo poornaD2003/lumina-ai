@@ -1,0 +1,33 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "npx tsx watch src/index.ts",
+    "build": "tsc",
+    "seed": "npx tsx prisma/seed.ts",
+    "studio": "npx prisma studio"
+  },
+  "keywords": [],
+  "type": "commonjs",
+  "dependencies": {
+    "@prisma/adapter-better-sqlite3": "7.10.0",
+    "@prisma/client": "^7.10.0",
+    "cors": "^2.8.6",
+    "date-fns": "^4.4.0",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "openai": "^7.9.0",
+    "simple-statistics": "^7.11.0",
+    "zod": "^4.5.4"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/node": "^26.4.1",
+    "prisma": "7.10.0",
+    "tsx": "^4.23.13",
+    "typescript": "^5.9.3"
+  }
+}
