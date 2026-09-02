@@ -2,8 +2,8 @@
  * Shared PrismaClient singleton for the backend services.
  *
  * Prisma 7 requires a driver adapter for direct database connections (there is
- * no `url` in schema.prisma anymore). The adapter resolves DATABASE_URL — a
- * relative SQLite path — against backend/prisma/, so the client works no
+ * no `url` in schema.prisma anymore). The adapter resolves DATABASE_URL - a
+ * relative SQLite path - against backend/prisma/, so the client works no
  * matter which directory the server is started from.
  *
  * Usage:

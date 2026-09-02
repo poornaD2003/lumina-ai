@@ -23,7 +23,7 @@ import path from 'path';
 // Load .env from the project root (same convention as src/index.ts)
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
-// DATABASE_URL is a relative SQLite path ("file:./dev.db") — resolve it against
+// DATABASE_URL is a relative SQLite path ("file:./dev.db") - resolve it against
 // this script's directory (prisma/), the same way the Prisma CLI resolves it.
 const envUrl = process.env.DATABASE_URL ?? 'file:./dev.db';
 const dbFile = envUrl.replace(/^file:/, '');
@@ -166,7 +166,7 @@ const PRODUCT_CATALOG: Array<{
   unitPrice: number;
   costRatio: [number, number];
 }> = [
-  // Electronics (8) — physical goods, thinner margins
+  // Electronics (8) - physical goods, thinner margins
   { name: 'Smart Display Pro', category: 'Electronics', unitPrice: 1299, costRatio: [0.55, 0.7] },
   { name: 'IoT Sensor Kit', category: 'Electronics', unitPrice: 249, costRatio: [0.55, 0.7] },
   { name: 'Wireless Hub X1', category: 'Electronics', unitPrice: 399, costRatio: [0.55, 0.7] },
@@ -175,7 +175,7 @@ const PRODUCT_CATALOG: Array<{
   { name: 'Smart Thermostat Z', category: 'Electronics', unitPrice: 199, costRatio: [0.55, 0.7] },
   { name: 'Portable Projector Mini', category: 'Electronics', unitPrice: 899, costRatio: [0.55, 0.7] },
   { name: 'Fitness Tracker Pulse', category: 'Electronics', unitPrice: 149, costRatio: [0.55, 0.7] },
-  // Software (8) — monthly subscription licenses, high margins
+  // Software (8) - monthly subscription licenses, high margins
   { name: 'CloudSync Enterprise', category: 'Software', unitPrice: 499, costRatio: [0.4, 0.55] },
   { name: 'DataVault Pro', category: 'Software', unitPrice: 299, costRatio: [0.4, 0.55] },
   { name: 'SecureAuth Suite', category: 'Software', unitPrice: 399, costRatio: [0.4, 0.55] },
@@ -184,7 +184,7 @@ const PRODUCT_CATALOG: Array<{
   { name: 'CodeCraft Studio', category: 'Software', unitPrice: 149, costRatio: [0.4, 0.55] },
   { name: 'PixelPerfect Editor', category: 'Software', unitPrice: 129, costRatio: [0.4, 0.55] },
   { name: 'TaskFlow Organizer', category: 'Software', unitPrice: 79, costRatio: [0.4, 0.55] },
-  // Services (7) — professional services, high margins
+  // Services (7) - professional services, high margins
   { name: 'Premium Support Plan', category: 'Services', unitPrice: 1499, costRatio: [0.4, 0.55] },
   { name: 'Managed Cloud Service', category: 'Services', unitPrice: 3500, costRatio: [0.4, 0.55] },
   { name: 'Security Audit Package', category: 'Services', unitPrice: 2500, costRatio: [0.4, 0.55] },
@@ -192,7 +192,7 @@ const PRODUCT_CATALOG: Array<{
   { name: 'Training Workshop Series', category: 'Services', unitPrice: 899, costRatio: [0.4, 0.55] },
   { name: 'Consulting Retainer', category: 'Services', unitPrice: 4200, costRatio: [0.4, 0.55] },
   { name: 'Hardware Installation Service', category: 'Services', unitPrice: 450, costRatio: [0.4, 0.55] },
-  // Hardware (7) — infrastructure equipment, thinner margins
+  // Hardware (7) - infrastructure equipment, thinner margins
   { name: 'Server Rack Unit', category: 'Hardware', unitPrice: 2200, costRatio: [0.55, 0.7] },
   { name: 'Network Switch Pro', category: 'Hardware', unitPrice: 3400, costRatio: [0.55, 0.7] },
   { name: 'Storage Array S500', category: 'Hardware', unitPrice: 7500, costRatio: [0.55, 0.7] },
@@ -401,7 +401,7 @@ function buildFinancialRecords(
     const recordDate = () =>
       new Date(year, monthOfYear, randInt(1, daysInMonth), randInt(9, 15), randInt(0, 59), randInt(0, 59));
 
-    // Revenue — one line per product category, summing to the month's actual sales
+    // Revenue - one line per product category, summing to the month's actual sales
     for (const [category, amount] of revenueByCategory) {
       records.push({
         recordDate: recordDate(),
@@ -412,7 +412,7 @@ function buildFinancialRecords(
       });
     }
 
-    // COGS — 40-50% of revenue, one line per product category
+    // COGS - 40-50% of revenue, one line per product category
     const cogsRatio = randFloat(0.4, 0.5);
     let totalCogs = 0;
     for (const [category, amount] of revenueByCategory) {
@@ -427,7 +427,7 @@ function buildFinancialRecords(
       });
     }
 
-    // Salaries — $80K-$120K/month with slight growth, split by department
+    // Salaries - $80K-$120K/month with slight growth, split by department
     const totalSalaries = round2(salaryBase);
     salaryBase *= 1.008;
     for (const [department, share] of SALARY_DEPARTMENTS) {
@@ -440,7 +440,7 @@ function buildFinancialRecords(
       });
     }
 
-    // Marketing — $15K-$40K/month, boosted during Q4
+    // Marketing - $15K-$40K/month, boosted during Q4
     const isQ4 = monthOfYear >= 9;
     const marketingTotal = Math.min(40_000, randFloat(16_000, 26_000) * (isQ4 ? 1.4 : 1));
     for (const [channel, share] of MARKETING_CHANNELS) {
@@ -453,7 +453,7 @@ function buildFinancialRecords(
       });
     }
 
-    // Rent — fixed $25K/month
+    // Rent - fixed $25K/month
     records.push({
       recordDate: recordDate(),
       recordType: 'Expense',
@@ -469,7 +469,7 @@ function buildFinancialRecords(
       description: `Rent - Warehouse & facilities (${monthLabel} ${year})`,
     });
 
-    // Utilities — $5K-$8K/month
+    // Utilities - $5K-$8K/month
     const utilitiesTotal = randFloat(5_000, 8_000);
     for (const [line, share] of UTILITY_LINES) {
       records.push({
@@ -481,7 +481,7 @@ function buildFinancialRecords(
       });
     }
 
-    // R&D — $8K-$15K/month
+    // R&D - $8K-$15K/month
     const rndTotal = randFloat(8_000, 15_000);
     for (const [line, share] of RND_LINES) {
       records.push({
@@ -493,7 +493,7 @@ function buildFinancialRecords(
       });
     }
 
-    // Tax — 15% of the month's profit, when positive
+    // Tax - 15% of the month's profit, when positive
     const totalExpenses = totalCogs + totalSalaries + marketingTotal + RENT_TOTAL + utilitiesTotal + rndTotal;
     const profit = totalRevenue - totalExpenses;
     if (profit > 0) {

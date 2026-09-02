@@ -10,7 +10,7 @@ dotenv.config({ path: path.resolve(configDir, '../.env') });
 
 // DATABASE_URL is a relative SQLite path ("file:./dev.db"). Resolve it against
 // the prisma/ directory (next to schema.prisma) so the database location is
-// independent of the current working directory — same semantics as classic
+// independent of the current working directory - same semantics as classic
 // Prisma, i.e. backend/prisma/dev.db.
 const envUrl = process.env.DATABASE_URL ?? 'file:./dev.db';
 const sqlitePath = envUrl.replace(/^file:/, '');

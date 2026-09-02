@@ -1,5 +1,5 @@
 /**
- * Analytics service — aggregated business metrics for the BI dashboard.
+ * Analytics service - aggregated business metrics for the BI dashboard.
  *
  * All queries run through the shared Prisma client singleton
  * (src/services/prisma.ts). Date-based grouping uses SQLite's strftime() on

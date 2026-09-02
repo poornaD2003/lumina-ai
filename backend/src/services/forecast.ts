@@ -1,5 +1,5 @@
 /**
- * Forecast service — linear-regression extrapolation of monthly revenue.
+ * Forecast service - linear-regression extrapolation of monthly revenue.
  *
  * Fits a least-squares line (simple-statistics) over the historical monthly
  * revenue series and projects it `monthsAhead` months into the future. The

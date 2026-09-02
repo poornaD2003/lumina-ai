@@ -1,5 +1,5 @@
 /**
- * Business intelligence AI agent — combines Gemini AI chat completions with
+ * Business intelligence AI agent - combines Gemini AI chat completions with
  * live business data context. Falls back to keyword-based analytics responses
  * when no API key is configured or the AI call fails.
  */

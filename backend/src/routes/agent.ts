@@ -1,5 +1,5 @@
 /**
- * Agent chat endpoint — accepts user questions and returns AI-powered or
+ * Agent chat endpoint - accepts user questions and returns AI-powered or
  * fallback analytics responses.
  */
 import { Router } from 'express';

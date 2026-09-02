@@ -1,7 +1,7 @@
 import dotenv from 'dotenv';
 import path from 'path';
 
-// Load .env from project root — MUST happen before any route/service imports
+// Load .env from project root - MUST happen before any route/service imports
 // that read process.env at module scope (e.g. BusinessAgent constructor).
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 

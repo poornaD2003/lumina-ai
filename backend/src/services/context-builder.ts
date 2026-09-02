@@ -1,5 +1,5 @@
 /**
- * Context builder — selectively fetches relevant business data based on the
+ * Context builder - selectively fetches relevant business data based on the
  * user's question and formats it as compact text for the AI prompt.
  */
 import * as analytics from './analytics.js';

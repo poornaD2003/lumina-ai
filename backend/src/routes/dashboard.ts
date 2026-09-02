@@ -1,5 +1,5 @@
 /**
- * Dashboard REST API — read-only GET endpoints backed by the analytics and
+ * Dashboard REST API - read-only GET endpoints backed by the analytics and
  * forecast services. Every handler wraps its service call in try/catch and
  * forwards failures to the Express error middleware.
  */

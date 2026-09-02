@@ -2,7 +2,7 @@
   <img src="frontend/public/favicon.svg" alt="Lumina" width="80" />
 </p>
 
-<h1 align="center">Lumina — Business Intelligence AI</h1>
+<h1 align="center">Lumina - Business Intelligence AI</h1>
 
 <p align="center">
   An AI-powered business intelligence platform that turns your sales, customer, product, and financial data into actionable insights through natural language conversation.
@@ -21,17 +21,17 @@
 ## Features
 
 ### Dashboard
-- **KPI Cards** — Total revenue, active customers, total orders, average order value
-- **Sales Chart** — Monthly revenue breakdown with order counts
-- **Forecast Chart** — Linear regression-based sales projections (3 months ahead)
-- **Customer Segments** — Breakdown by Enterprise, SMB, Startup, Consumer
-- **Product Performance** — Top products by revenue, units sold, and margin
-- **Financial Overview** — Monthly P&L with revenue, expenses, COGS, and net profit
+- **KPI Cards** - Total revenue, active customers, total orders, average order value
+- **Sales Chart** - Monthly revenue breakdown with order counts
+- **Forecast Chart** - Linear regression-based sales projections (3 months ahead)
+- **Customer Segments** - Breakdown by Enterprise, SMB, Startup, Consumer
+- **Product Performance** - Top products by revenue, units sold, and margin
+- **Financial Overview** - Monthly P&L with revenue, expenses, COGS, and net profit
 
 ### AI Chat Agent
 - Natural language queries about your business data
 - Context-aware responses powered by **Google Gemini 3.6 Flash**
-- Intelligent topic detection — only fetches relevant data for each question
+- Intelligent topic detection - only fetches relevant data for each question
 - Falls back to rule-based analytics when AI is unavailable
 - Chat history support (last 5 messages for context)
 
@@ -71,7 +71,7 @@ lumina-ai/
 
 ### Prerequisites
 - **Node.js** 18+
-- **Google AI Studio API Key** — Get one at [aistudio.google.com](https://aistudio.google.com/apikey)
+- **Google AI Studio API Key** - Get one at [aistudio.google.com](https://aistudio.google.com/apikey)
 
 ### Installation
 
@@ -110,11 +110,11 @@ lumina-ai/
 
 5. **Start the application**
    ```bash
-   # Terminal 1 — Backend (port 3001)
+   # Terminal 1 - Backend (port 3001)
    cd backend
    npm run dev
 
-   # Terminal 2 — Frontend (port 5173)
+   # Terminal 2 - Frontend (port 5173)
    cd frontend
    npm run dev
    ```
@@ -135,11 +135,11 @@ The seed script generates realistic sample data:
 
 ## How the AI Agent Works
 
-1. **Topic Detection** — Scans your question for keywords (sales, forecast, customer, product, financial, region)
-2. **Context Building** — Fetches only the relevant data slice from the database
-3. **Prompt Assembly** — Combines system prompt + business context + chat history + your question
-4. **Gemini Call** — Sends to `gemini-3.6-flash` via Google's OpenAI-compatible endpoint
-5. **Fallback** — If the AI is unavailable, a rule-based engine generates answers directly from the database
+1. **Topic Detection** - Scans your question for keywords (sales, forecast, customer, product, financial, region)
+2. **Context Building** - Fetches only the relevant data slice from the database
+3. **Prompt Assembly** - Combines system prompt + business context + chat history + your question
+4. **Gemini Call** - Sends to `gemini-3.6-flash` via Google's OpenAI-compatible endpoint
+5. **Fallback** - If the AI is unavailable, a rule-based engine generates answers directly from the database
 
 ## Scripts
 
