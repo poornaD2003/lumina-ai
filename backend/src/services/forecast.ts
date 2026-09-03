@@ -1,14 +1,10 @@
 /**
- * Forecast service - linear-regression extrapolation of monthly revenue.
+ * Forecast service - Time Series Forecasting using Double Exponential Smoothing (Holt's Linear Trend).
  *
- * Fits a least-squares line (simple-statistics) over the historical monthly
- * revenue series and projects it `monthsAhead` months into the future. The
- * returned series contains every historical month (with both actual and
- * predicted values, so the fitted trend is visible) followed by the future
- * months (predicted only).
+ * This method captures both the level and the trend of the historical monthly
+ * revenue series to project it `monthsAhead` months into the future.
  */
-import { linearRegression, linearRegressionLine } from 'simple-statistics';
-import { prisma } from './prisma.js';
+import { prisma } from '../lib/prisma';
 import type { ForecastPoint } from '../types/index.js';
 
 const round2 = (n: number): number => Math.round(n * 100) / 100;
@@ -41,23 +37,42 @@ export async function getSalesForecast(monthsAhead = 3): Promise<ForecastPoint[]
     return [];
   }
 
-  // Fit y = m*x + b where x is the month index (0 = oldest month).
-  const regression = linearRegression(history.map((point, index) => [index, point.revenue]));
-  const predict = linearRegressionLine(regression);
-  const clampAtZero = (value: number): number => round2(Math.max(0, value));
+  // Double Exponential Smoothing (Holt's Linear Trend) parameters
+  const alpha = 0.4; // Smoothing factor for level
+  const beta = 0.3;  // Smoothing factor for trend
 
-  const points: ForecastPoint[] = history.map((point, index) => ({
-    period: point.period,
-    actual: round2(point.revenue),
-    predicted: clampAtZero(predict(index)),
-  }));
+  // Initialize Level (L) and Trend (T)
+  let L = history[0].revenue;
+  let T = history.length > 1 ? history[1].revenue - history[0].revenue : 0;
 
-  // Extrapolate past the last historical month.
-  const lastPeriod = history[history.length - 1].period;
-  for (let i = 1; i <= monthsAhead; i++) {
+  const points: ForecastPoint[] = [];
+
+  // Calculate fitted values over historical data
+  for (let i = 0; i < history.length; i++) {
+    const actual = history[i].revenue;
+    // For the first period, we assume prediction equals actual for visualization
+    const predicted = i === 0 ? actual : L + T;
+
+    if (i > 0) {
+      const prevL = L;
+      L = alpha * actual + (1 - alpha) * (L + T);
+      T = beta * (L - prevL) + (1 - beta) * T;
+    }
+
     points.push({
-      period: addMonths(lastPeriod, i),
-      predicted: clampAtZero(predict(history.length - 1 + i)),
+      period: history[i].period,
+      actual: round2(actual),
+      predicted: round2(Math.max(0, predicted)),
+    });
+  }
+
+  // Extrapolate future values using the last computed Level and Trend
+  const lastPeriod = history[history.length - 1].period;
+  for (let k = 1; k <= monthsAhead; k++) {
+    const forecastVal = L + k * T;
+    points.push({
+      period: addMonths(lastPeriod, k),
+      predicted: round2(Math.max(0, forecastVal)),
     });
   }
 
