@@ -22,6 +22,15 @@ model Customer {
   sales           Sale[]
 }
 
+model Supplier {
+  id           Int       @id @default(autoincrement())
+  name         String
+  email        String?
+  phone        String?
+  leadTimeDays Int       @default(7)
+  products     Product[]
+}
+
 model Product {
   id             Int     @id @default(autoincrement())
   name           String
@@ -37,6 +46,8 @@ model Product {
   stockQuantity  Int
   reorderLevel   Int     @default(5)
   warrantyMonths Int     @default(12)
+  supplierId     Int?
+  supplier       Supplier? @relation(fields: [supplierId], references: [id])
   sales          Sale[]
 }
 

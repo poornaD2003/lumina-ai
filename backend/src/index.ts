@@ -10,6 +10,7 @@ import cors from 'cors';
 import { errorHandler } from './middleware/error-handler.js';
 import dashboardRoutes from './routes/dashboard.js';
 import agentRoutes from './routes/agent.js';
+import pricingRoutes from './routes/pricingRoutes';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -28,10 +29,16 @@ app.use('/api/dashboard', dashboardRoutes);
 // AI agent chat API
 app.use('/api/agent', agentRoutes);
 
+// Pricing Engine API
+app.use('/api/pricing', pricingRoutes);
+
 import { getRestockPlan } from './Controlller/stockController.js';
+import { generatePurchaseOrders } from './Controlller/purchaseOrderController.js';
+
+app.get('/api/restock-plan', getRestockPlan);
+app.post('/api/restock-plan/generate-po', generatePurchaseOrders);
 
 // Error handler (must be last)
-app.get('/api/restock-plan', getRestockPlan);
 app.use(errorHandler);
 
 app.listen(PORT, () => {

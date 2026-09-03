@@ -1,12 +1,20 @@
 // backend/src/Controlller/stockController.ts
 import { Request, Response } from 'express';
-import { prisma } from '../lib/prisma'; // සාදාගත් prisma instance එක import කරන්න
+import { prisma } from '../lib/prisma';
 
 export const getRestockPlan = async (req: Request, res: Response) => {
     try {
+        // Find the latest sale date to establish our "current" date relative to seed data
+        const latestSale = await prisma.sale.findFirst({
+            orderBy: { saleDate: 'desc' },
+        });
+        const latestDate = latestSale ? latestSale.saleDate : new Date();
+        const ninetyDaysAgo = new Date(latestDate.getTime() - 90 * 24 * 60 * 60 * 1000);
+
         const products = await prisma.product.findMany({
             include: {
                 sales: true,
+                supplier: true,
             },
         });
 
@@ -16,6 +24,19 @@ export const getRestockPlan = async (req: Request, res: Response) => {
                     (acc, item) => acc + item.quantity,
                     0
                 );
+
+                // Calculate 90-day sales velocity
+                const recentSales = product.sales.filter(s => s.saleDate >= ninetyDaysAgo);
+                const recentSoldUnits = recentSales.reduce((acc, item) => acc + item.quantity, 0);
+                const dailySalesVelocity = recentSoldUnits / 90;
+
+                // Lead time logic
+                const leadTimeDays = product.supplier?.leadTimeDays ?? 7;
+                const daysUntilStockout = dailySalesVelocity > 0 
+                    ? product.stockQuantity / dailySalesVelocity 
+                    : 999;
+                
+                const orderDeadlineDays = Math.ceil(daysUntilStockout - leadTimeDays);
 
                 const profitMargin =
                     product.unitPrice > 0
@@ -37,6 +58,10 @@ export const getRestockPlan = async (req: Request, res: Response) => {
                     totalSold,
                     profitMargin: parseFloat(profitMargin.toFixed(1)),
                     suggestedRestock,
+                    supplierName: product.supplier?.name ?? 'Unknown Supplier',
+                    leadTimeDays,
+                    orderDeadlineDays,
+                    dailySalesVelocity: parseFloat(dailySalesVelocity.toFixed(2)),
                 };
             })
             .filter((p) => p.suggestedRestock > 0 || p.currentStock <= p.reorderLevel)

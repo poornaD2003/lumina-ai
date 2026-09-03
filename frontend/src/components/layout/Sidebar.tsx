@@ -1,10 +1,11 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, MessageSquare, Package } from 'lucide-react';
+import { DollarSign, LayoutDashboard, MessageSquare, Package } from 'lucide-react';
 
 const links = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/chat', label: 'Chat', icon: MessageSquare },
   { to: '/restock-plan', label: 'Restock Plan', icon: Package },
+  { to: '/dynamic-pricing', label: 'Pricing Engine', icon: DollarSign },
 ];
 
 export default function Sidebar() {
@@ -26,10 +27,9 @@ export default function Sidebar() {
             to={to}
             end={to === '/'}
             className={({ isActive }) =>
-              `flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                isActive
-                  ? 'bg-slate-700/80 text-white'
-                  : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
+              `flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${isActive
+                ? 'bg-slate-700/80 text-white'
+                : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
               }`
             }
           >

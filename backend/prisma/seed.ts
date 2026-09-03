@@ -128,6 +128,18 @@ function buildCustomers() {
   });
 }
 
+/* ── Suppliers ───────────────────────────────────────────────────────────── */
+
+const SUPPLIER_DATA = [
+  { name: 'ASUS Global Distributors', email: 'orders@asus.com', phone: '0112111111', leadTimeDays: 14 },
+  { name: 'Dell Tech Partners', email: 'sales@dell.lk', phone: '0112222222', leadTimeDays: 21 },
+  { name: 'HP Enterprise Supply', email: 'supply@hp.lk', phone: '0112333333', leadTimeDays: 18 },
+  { name: 'Apple Authorized Imports', email: 'imports@apple.lk', phone: '0112444444', leadTimeDays: 30 },
+  { name: 'Lenovo Wholesale', email: 'orders@lenovo.lk', phone: '0112555555', leadTimeDays: 12 },
+  { name: 'MSI/Acer Gaming Supply', email: 'gaming@supply.lk', phone: '0112666666', leadTimeDays: 15 },
+  { name: 'Tech Accessories Wholesale', email: 'accessories@wholesale.lk', phone: '0112777777', leadTimeDays: 5 },
+];
+
 /* ── Products ────────────────────────────────────────────────────────────── */
 
 interface ProductDraft {
@@ -144,6 +156,7 @@ interface ProductDraft {
   stockQuantity: number;
   reorderLevel: number;
   warrantyMonths: number;
+  supplierId: number;
 }
 
 // All prices in LKR
@@ -200,7 +213,7 @@ const CATEGORY_POPULARITY: Record<string, number> = {
   'Accessories':     2.2,
 };
 
-function buildProducts(): { drafts: ProductDraft[]; popularity: number[] } {
+function buildProducts(suppliers: Array<{ id: number; name: string }>): { drafts: ProductDraft[]; popularity: number[] } {
   const counters: Record<string, number> = {};
   const drafts: ProductDraft[] = [];
   const popularity: number[] = [];
@@ -208,6 +221,17 @@ function buildProducts(): { drafts: ProductDraft[]; popularity: number[] } {
   for (const entry of PRODUCT_CATALOG) {
     counters[entry.category] = (counters[entry.category] ?? 0) + 1;
     const sku = `${SKU_PREFIX[entry.category]}-${String(counters[entry.category]).padStart(3, '0')}`;
+    
+    let supplierName = 'Tech Accessories Wholesale';
+    if (entry.brand === 'ASUS') supplierName = 'ASUS Global Distributors';
+    else if (entry.brand === 'Dell') supplierName = 'Dell Tech Partners';
+    else if (entry.brand === 'HP') supplierName = 'HP Enterprise Supply';
+    else if (entry.brand === 'Apple') supplierName = 'Apple Authorized Imports';
+    else if (entry.brand === 'Lenovo') supplierName = 'Lenovo Wholesale';
+    else if (entry.brand === 'MSI' || entry.brand === 'Acer') supplierName = 'MSI/Acer Gaming Supply';
+
+    const supplierId = suppliers.find(s => s.name === supplierName)?.id ?? suppliers[0].id;
+
     drafts.push({
       name: entry.name,
       sku,
@@ -222,6 +246,7 @@ function buildProducts(): { drafts: ProductDraft[]; popularity: number[] } {
       stockQuantity: entry.stock,
       reorderLevel: entry.reorder,
       warrantyMonths: entry.warranty,
+      supplierId,
     });
     // Per-product popularity = category weight × small random jitter
     popularity.push(CATEGORY_POPULARITY[entry.category] * randFloat(0.75, 1.25));
@@ -460,13 +485,18 @@ async function main(): Promise<void> {
   await prisma.financialRecord.deleteMany();
   await prisma.customer.deleteMany();
   await prisma.product.deleteMany();
+  await prisma.supplier.deleteMany();
 
   console.log('Seeding 40 customers ...');
   await prisma.customer.createMany({ data: buildCustomers() });
   const customers = await prisma.customer.findMany({ orderBy: { id: 'asc' } });
 
+  console.log('Seeding suppliers ...');
+  await prisma.supplier.createMany({ data: SUPPLIER_DATA });
+  const suppliers = await prisma.supplier.findMany({ orderBy: { id: 'asc' } });
+
   console.log('Seeding 25 products ...');
-  const { drafts: productDrafts, popularity } = buildProducts();
+  const { drafts: productDrafts, popularity } = buildProducts(suppliers);
   await prisma.product.createMany({ data: productDrafts });
   const productRows = await prisma.product.findMany({ orderBy: { id: 'asc' } });
   const productPool = productRows.map((row, i) => ({ ...row, popularity: popularity[i] }));
