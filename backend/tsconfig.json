@@ -10,7 +10,8 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
-    "declaration": true
+    "declaration": true,
+    "types": ["node", "cors", "express"]
   },
   "include": ["src/**/*", "prisma/**/*"],
   "exclude": ["node_modules", "dist"]

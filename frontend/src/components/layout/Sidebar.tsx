@@ -1,9 +1,10 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, MessageSquare } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, Package } from 'lucide-react';
 
 const links = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/chat', label: 'Chat', icon: MessageSquare },
+  { to: '/restock-plan', label: 'Restock Plan', icon: Package },
 ];
 
 export default function Sidebar() {

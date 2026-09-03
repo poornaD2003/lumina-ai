@@ -28,7 +28,10 @@ app.use('/api/dashboard', dashboardRoutes);
 // AI agent chat API
 app.use('/api/agent', agentRoutes);
 
+import { getRestockPlan } from './Controlller/stockController.js';
+
 // Error handler (must be last)
+app.get('/api/restock-plan', getRestockPlan);
 app.use(errorHandler);
 
 app.listen(PORT, () => {

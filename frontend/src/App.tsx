@@ -3,7 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import AppShell from './components/layout/AppShell';
 import DashboardPage from './pages/DashboardPage';
 import ChatPage from './pages/ChatPage';
-
+import { RestockPlanPage } from './pages/RestockPlanPage';
 const queryClient = new QueryClient();
 
 export default function App() {
@@ -14,6 +14,7 @@ export default function App() {
           <Route element={<AppShell />}>
             <Route path="/" element={<DashboardPage />} />
             <Route path="/chat" element={<ChatPage />} />
+            <Route path="/restock-plan" element={<RestockPlanPage />} />
           </Route>
         </Routes>
       </BrowserRouter>

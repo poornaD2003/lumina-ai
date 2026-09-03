@@ -5,9 +5,9 @@ import ChatInput from '../components/chat/ChatInput';
 
 const suggestions = [
   { text: 'What are my top selling products?', icon: Package, color: 'text-violet-500 bg-violet-50 border-violet-100' },
-  { text: 'Show me the sales forecast', icon: TrendingUp, color: 'text-blue-500 bg-blue-50 border-blue-100' },
+  { text: 'Show me seasonal trends for high-margin products.', icon: TrendingUp, color: 'text-blue-500 bg-blue-50 border-blue-100' },
   { text: 'Which customers are most valuable?', icon: Users, color: 'text-emerald-500 bg-emerald-50 border-emerald-100' },
-  { text: 'How are expenses trending?', icon: BarChart3, color: 'text-amber-500 bg-amber-50 border-amber-100' },
+  { text: 'What products should I restock for next month to maximize profit?', icon: BarChart3, color: 'text-amber-500 bg-amber-50 border-amber-100' },
 ];
 
 function EmptyState({ onSuggestionClick }: { onSuggestionClick: (text: string) => void }) {

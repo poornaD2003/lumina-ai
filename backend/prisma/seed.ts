@@ -1,19 +1,14 @@
 /**
- * Seed script for the Business Intelligence AI Agent database.
+ * Seed script for Lumina Laptop Store database.
  *
- * Generates realistic, reproducible sample data:
- *   - 50 customers  (Enterprise / SMB / Startup / Consumer across 4 regions)
- *   - 30 products   (Electronics / Software / Services / Hardware)
- *   - ~2,000 sales  (Jan 2025 - Jun 2026, seasonal Q4 peak + growth trend)
- *   - ~500 financial records (18 months of monthly P&L lines)
+ * Generates realistic, reproducible sample data for a Sri Lankan laptop shop:
+ *   - 40  customers  (Corporate / Education / Gaming / Individual)
+ *   - 25  products   (Gaming Laptops / Ultrabooks / Business / Standard / Workstations / Accessories)
+ *   - ~500 sales     (Jan 2025 – Jun 2026, with Sri Lankan seasonal peaks)
+ *   - ~350 financial records (18 months of monthly P&L lines in LKR)
  *
- * Run from the backend directory:  npx tsx prisma/seed.ts
- *
- * Notes on the Prisma 7 setup:
- *   - The connection URL is configured in prisma.config.ts (for the CLI) and
- *     passed to PrismaClient as a driver adapter at runtime.
- *   - A deterministic LCG random generator is used, so repeated runs produce
- *     identical data.
+ * Run from the backend directory:
+ *   node node_modules\prisma\build\index.js db seed
  */
 import { PrismaClient } from '@prisma/client';
 import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
@@ -23,7 +18,7 @@ import path from 'path';
 // Load .env from the project root (same convention as src/index.ts)
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
-// DATABASE_URL is a relative SQLite path ("file:./dev.db") - resolve it against
+// DATABASE_URL is a relative SQLite path ("file:./dev.db") – resolve it against
 // this script's directory (prisma/), the same way the Prisma CLI resolves it.
 const envUrl = process.env.DATABASE_URL ?? 'file:./dev.db';
 const dbFile = envUrl.replace(/^file:/, '');
@@ -33,9 +28,7 @@ const adapter = new PrismaBetterSqlite3({
 });
 const prisma = new PrismaClient({ adapter });
 
-/* -------------------------------------------------------------------------- */
-/*  Deterministic random generator (linear congruential generator)            */
-/* -------------------------------------------------------------------------- */
+/* ── Deterministic RNG (linear congruential generator) ───────────────────── */
 
 let rngState = 0x2f6e2b1;
 
@@ -45,23 +38,14 @@ function rand(): number {
   return rngState / 4294967296;
 }
 
-const randInt = (min: number, max: number): number => min + Math.floor(rand() * (max - min + 1));
+const randInt   = (min: number, max: number): number => min + Math.floor(rand() * (max - min + 1));
 const randFloat = (min: number, max: number): number => min + rand() * (max - min);
-const round2 = (n: number): number => Math.round(n * 100) / 100;
-const pick = <T>(items: T[]): T => items[Math.floor(rand() * items.length)];
-
-function shuffle<T>(items: T[]): T[] {
-  const arr = [...items];
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(rand() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-  return arr;
-}
+const round2    = (n: number): number => Math.round(n * 100) / 100;
+const pick      = <T>(arr: T[]): T => arr[Math.floor(rand() * arr.length)];
 
 function weightedPick<T>(items: T[], weightOf: (item: T) => number): T {
-  const totalWeight = items.reduce((sum, item) => sum + weightOf(item), 0);
-  let ticket = rand() * totalWeight;
+  const total = items.reduce((sum, item) => sum + weightOf(item), 0);
+  let ticket = rand() * total;
   for (const item of items) {
     ticket -= weightOf(item);
     if (ticket <= 0) return item;
@@ -69,452 +53,406 @@ function weightedPick<T>(items: T[], weightOf: (item: T) => number): T {
   return items[items.length - 1];
 }
 
-/* -------------------------------------------------------------------------- */
-/*  Customers                                                                 */
-/* -------------------------------------------------------------------------- */
+/* ── Customers ───────────────────────────────────────────────────────────── */
 
-const CUSTOMER_NAMES = [
-  'Acme Corp', 'TechVision Inc', 'Global Solutions Ltd', 'Nimbus Analytics',
-  'Blue Harbor Trading', 'Vertex Systems', 'Quantum Leap Labs', 'Silverline Media',
-  'Ironclad Security', 'Pinnacle Foods Group', 'BrightPath Consulting', 'Cascade Logistics',
-  'Redwood Capital', 'Stellar Dynamics', 'Maple Ridge Retail', 'Falcon Freight Co',
-  'Horizon Health Systems', 'Coral Bay Resorts', 'Zenith Robotics', 'Amber Wave Energy',
-  'Northstar Insurance', 'Crescent Tech Partners', 'Oakbridge Construction', 'Lunar Software Works',
-  'Vista Marketing Group', 'Trident Marine Supply', 'Copper Canyon Mining', 'Aurora Biotech',
-  'Summit Peak Outdoors', 'Harbor Light Shipping', 'Ember Glow Cosmetics', 'Titan Steel Works',
-  'Willow Creek Farms', 'Prism Optics Lab', 'Granite Peak Finance', 'Echo Valley Audio',
-  'Cobalt Interactive', 'Meadowbrook Education', 'Saffron Spice Traders', 'Ivory Tower Publishing',
-  'Storm Chasers Weather', 'Blazing Trail Sports', 'Crystal Lake Beverages', 'Onyx Mobile Networks',
-  'Velvet Touch Textiles', 'Frontier Drone Ops', 'Golden Gate Grocers', 'Sapphire Data Centers',
-  'Wildflower Botanicals', 'Atlas Rail Transport',
+const CUSTOMER_DATA = [
+  // Corporate (10)
+  { name: 'Apex Technologies Pvt Ltd',    email: 'procurement@apextech.lk',    phone: '0112345678', segment: 'Corporate',  region: 'West'    },
+  { name: 'Ceylon Bank Ltd',              email: 'it@ceylonbank.lk',           phone: '0112789456', segment: 'Corporate',  region: 'West'    },
+  { name: 'SriLankan Airlines',           email: 'tech@srilankanair.lk',       phone: '0119733333', segment: 'Corporate',  region: 'West'    },
+  { name: 'Hayleys Management Solutions', email: 'systems@hayleys.lk',         phone: '0114744400', segment: 'Corporate',  region: 'West'    },
+  { name: 'Dialog Axiata PLC',            email: 'ict@dialog.lk',              phone: '0777678678', segment: 'Corporate',  region: 'West'    },
+  { name: 'MAS Holdings Ltd',             email: 'it@masholdings.com',         phone: '0114803000', segment: 'Corporate',  region: 'South'   },
+  { name: 'Brandix Lanka Ltd',            email: 'admin@brandixlanka.lk',      phone: '0112369900', segment: 'Corporate',  region: 'North'   },
+  { name: 'John Keells Holdings',         email: 'procurement@jkh.lk',         phone: '0112306000', segment: 'Corporate',  region: 'West'    },
+  { name: 'Softlogic Group',              email: 'it@softlogicgroup.lk',       phone: '0112001000', segment: 'Corporate',  region: 'East'    },
+  { name: 'Virtusa Lanka Ltd',            email: 'assets@virtusalanka.com',    phone: '0112305000', segment: 'Corporate',  region: 'West'    },
+  // Education (6)
+  { name: 'University of Moratuwa',       email: 'ict@uom.lk',                 phone: '0112650301', segment: 'Education',  region: 'West'    },
+  { name: 'SLIIT',                        email: 'ict@sliit.lk',               phone: '0112413901', segment: 'Education',  region: 'West'    },
+  { name: 'University of Peradeniya',     email: 'it@pdn.ac.lk',               phone: '0812388001', segment: 'Education',  region: 'Central' },
+  { name: 'NSBM Green University',        email: 'ict@nsbm.ac.lk',             phone: '0112741663', segment: 'Education',  region: 'West'    },
+  { name: 'Colombo International School', email: 'admin@cis.lk',               phone: '0112368000', segment: 'Education',  region: 'West'    },
+  { name: 'Kandy National College',       email: 'principal@knc.lk',           phone: '0812223456', segment: 'Education',  region: 'Central' },
+  // Gaming (10)
+  { name: 'Ashan Perera',                 email: 'ashan.perera@gmail.com',     phone: '0771234567', segment: 'Gaming',     region: 'West'    },
+  { name: 'Damith Rajapaksa',             email: 'damith.raj@gmail.com',       phone: '0752345678', segment: 'Gaming',     region: 'South'   },
+  { name: 'Lahiru Jayawardena',           email: 'lahiru.gamer@gmail.com',     phone: '0763456789', segment: 'Gaming',     region: 'West'    },
+  { name: 'Kasun Madushan',               email: 'kasun.mad@gmail.com',        phone: '0784567890', segment: 'Gaming',     region: 'Central' },
+  { name: 'Nithurshan Selvaraj',          email: 'nithu.gaming@gmail.com',     phone: '0765678901', segment: 'Gaming',     region: 'North'   },
+  { name: 'Ruwan Bandara',                email: 'ruwan.bandara@gmail.com',    phone: '0776789012', segment: 'Gaming',     region: 'West'    },
+  { name: 'Sachith Fernando',             email: 'sachith.fdo@gmail.com',      phone: '0757890123', segment: 'Gaming',     region: 'West'    },
+  { name: 'Tharaka Hettiarachchi',        email: 'tharaka.het@gmail.com',      phone: '0768901234', segment: 'Gaming',     region: 'South'   },
+  { name: 'Vihanga Senanayake',           email: 'vihanga.sen@gmail.com',      phone: '0779012345', segment: 'Gaming',     region: 'East'    },
+  { name: 'Yohan Croos',                  email: 'yohan.croos@gmail.com',      phone: '0760123456', segment: 'Gaming',     region: 'West'    },
+  // Individual (14)
+  { name: 'Nimal Perera',                 email: 'nimal.perera@gmail.com',     phone: '0771111111', segment: 'Individual', region: 'West'    },
+  { name: 'Dilani Silva',                 email: 'dilani.silva@outlook.com',   phone: '0762222222', segment: 'Individual', region: 'South'   },
+  { name: 'Amara Wickramasinghe',         email: 'amara.w@gmail.com',          phone: '0773333333', segment: 'Individual', region: 'West'    },
+  { name: 'Buddhika Rathnayake',          email: 'buddhika.r@gmail.com',       phone: '0754444444', segment: 'Individual', region: 'Central' },
+  { name: 'Chamara Kumara',               email: 'chamara.k@gmail.com',        phone: '0765555555', segment: 'Individual', region: 'North'   },
+  { name: 'Eshani Karunaratne',           email: 'eshani.k@gmail.com',         phone: '0776666666', segment: 'Individual', region: 'West'    },
+  { name: 'Fathima Nishara',              email: 'fathima.n@gmail.com',        phone: '0757777777', segment: 'Individual', region: 'East'    },
+  { name: 'Gihan Samarawickrama',         email: 'gihan.s@gmail.com',          phone: '0768888888', segment: 'Individual', region: 'West'    },
+  { name: 'Hasini Jayasinghe',            email: 'hasini.j@gmail.com',         phone: '0779999999', segment: 'Individual', region: 'South'   },
+  { name: 'Irfan Farook',                 email: 'irfan.f@gmail.com',          phone: '0760000001', segment: 'Individual', region: 'East'    },
+  { name: 'Janaka Dissanayake',           email: 'janaka.d@gmail.com',         phone: '0771000002', segment: 'Individual', region: 'West'    },
+  { name: 'Kavya Subasinghe',             email: 'kavya.s@gmail.com',          phone: '0752000003', segment: 'Individual', region: 'West'    },
+  { name: 'Laksiri Wijesekara',           email: 'laksiri.w@gmail.com',        phone: '0763000004', segment: 'Individual', region: 'Central' },
+  { name: 'Manel Wijeratne',              email: 'manel.w@gmail.com',          phone: '0784000005', segment: 'Individual', region: 'South'   },
 ];
 
-const SEGMENTS: Record<string, { count: number; ltvRange: [number, number] }> = {
-  Enterprise: { count: 10, ltvRange: [50_000, 500_000] },
-  SMB: { count: 15, ltvRange: [10_000, 100_000] },
-  Startup: { count: 15, ltvRange: [5_000, 50_000] },
-  Consumer: { count: 10, ltvRange: [1_000, 10_000] },
+const LTV_RANGES: Record<string, [number, number]> = {
+  Corporate:  [500_000,  5_000_000],
+  Education:  [200_000,  2_000_000],
+  Gaming:     [150_000,    800_000],
+  Individual: [50_000,     500_000],
 };
 
-const REGION_COUNTS: Record<string, number> = { North: 12, South: 13, East: 12, West: 13 };
+const ACQ_START = new Date(2022, 0, 1).getTime();
+const ACQ_END   = new Date(2025, 0, 1).getTime();
 
-const LEGAL_SUFFIXES = new Set(['corp', 'inc', 'ltd', 'co', 'llc', 'plc']);
-const EMAIL_PREFIXES = ['contact', 'info', 'hello', 'sales', 'support'];
-
-interface CustomerDraft {
-  name: string;
-  email: string;
-  segment: string;
-  region: string;
-  lifetimeValue: number;
-  acquisitionDate: Date;
-  isActive: boolean;
-}
-
-function buildCustomers(): CustomerDraft[] {
-  // Exact segment/region distributions, shuffled deterministically
-  const segmentPool = shuffle(
-    Object.entries(SEGMENTS).flatMap(([segment, cfg]) =>
-      Array.from({ length: cfg.count }, () => segment),
-    ),
-  );
-  const regionPool = shuffle(
-    Object.entries(REGION_COUNTS).flatMap(([region, count]) =>
-      Array.from({ length: count }, () => region),
-    ),
-  );
-  const acquisitionStart = new Date(2023, 0, 1).getTime();
-  const acquisitionEnd = new Date(2026, 5, 1).getTime();
-
-  return CUSTOMER_NAMES.map((name, i) => {
-    const segment = segmentPool[i];
-    const [ltvMin, ltvMax] = SEGMENTS[segment].ltvRange;
-    const domain = name
-      .toLowerCase()
-      .split(' ')
-      .filter((word) => !LEGAL_SUFFIXES.has(word))
-      .join('');
+function buildCustomers() {
+  return CUSTOMER_DATA.map(({ name, email, phone, segment, region }) => {
+    const [ltvMin, ltvMax] = LTV_RANGES[segment];
     return {
       name,
-      email: `${EMAIL_PREFIXES[i % EMAIL_PREFIXES.length]}@${domain}.com`,
+      email,
+      phone,
       segment,
-      region: regionPool[i],
+      region,
       lifetimeValue: round2(randFloat(ltvMin, ltvMax)),
-      acquisitionDate: new Date(acquisitionStart + rand() * (acquisitionEnd - acquisitionStart)),
-      isActive: rand() < 0.85, // ~85% active
+      acquisitionDate: new Date(ACQ_START + rand() * (ACQ_END - ACQ_START)),
+      isActive: rand() < 0.92,
     };
   });
 }
 
-/* -------------------------------------------------------------------------- */
-/*  Products                                                                  */
-/* -------------------------------------------------------------------------- */
+/* ── Products ────────────────────────────────────────────────────────────── */
 
 interface ProductDraft {
   name: string;
   sku: string;
+  brand: string;
   category: string;
+  processor: string | null;
+  ram: string | null;
+  storage: string | null;
+  displaySize: string | null;
   unitPrice: number;
   costPrice: number;
   stockQuantity: number;
   reorderLevel: number;
+  warrantyMonths: number;
 }
 
-const PRODUCT_CATALOG: Array<{
-  name: string;
-  category: string;
-  unitPrice: number;
-  costRatio: [number, number];
-}> = [
-  // Electronics (8) - physical goods, thinner margins
-  { name: 'Smart Display Pro', category: 'Electronics', unitPrice: 1299, costRatio: [0.55, 0.7] },
-  { name: 'IoT Sensor Kit', category: 'Electronics', unitPrice: 249, costRatio: [0.55, 0.7] },
-  { name: 'Wireless Hub X1', category: 'Electronics', unitPrice: 399, costRatio: [0.55, 0.7] },
-  { name: '4K Action Camera', category: 'Electronics', unitPrice: 599, costRatio: [0.55, 0.7] },
-  { name: 'Noise-Cancel Headset Elite', category: 'Electronics', unitPrice: 349, costRatio: [0.55, 0.7] },
-  { name: 'Smart Thermostat Z', category: 'Electronics', unitPrice: 199, costRatio: [0.55, 0.7] },
-  { name: 'Portable Projector Mini', category: 'Electronics', unitPrice: 899, costRatio: [0.55, 0.7] },
-  { name: 'Fitness Tracker Pulse', category: 'Electronics', unitPrice: 149, costRatio: [0.55, 0.7] },
-  // Software (8) - monthly subscription licenses, high margins
-  { name: 'CloudSync Enterprise', category: 'Software', unitPrice: 499, costRatio: [0.4, 0.55] },
-  { name: 'DataVault Pro', category: 'Software', unitPrice: 299, costRatio: [0.4, 0.55] },
-  { name: 'SecureAuth Suite', category: 'Software', unitPrice: 399, costRatio: [0.4, 0.55] },
-  { name: 'InsightIQ Analytics', category: 'Software', unitPrice: 449, costRatio: [0.4, 0.55] },
-  { name: 'MailFlow Manager', category: 'Software', unitPrice: 99, costRatio: [0.4, 0.55] },
-  { name: 'CodeCraft Studio', category: 'Software', unitPrice: 149, costRatio: [0.4, 0.55] },
-  { name: 'PixelPerfect Editor', category: 'Software', unitPrice: 129, costRatio: [0.4, 0.55] },
-  { name: 'TaskFlow Organizer', category: 'Software', unitPrice: 79, costRatio: [0.4, 0.55] },
-  // Services (7) - professional services, high margins
-  { name: 'Premium Support Plan', category: 'Services', unitPrice: 1499, costRatio: [0.4, 0.55] },
-  { name: 'Managed Cloud Service', category: 'Services', unitPrice: 3500, costRatio: [0.4, 0.55] },
-  { name: 'Security Audit Package', category: 'Services', unitPrice: 2500, costRatio: [0.4, 0.55] },
-  { name: 'Data Migration Service', category: 'Services', unitPrice: 1800, costRatio: [0.4, 0.55] },
-  { name: 'Training Workshop Series', category: 'Services', unitPrice: 899, costRatio: [0.4, 0.55] },
-  { name: 'Consulting Retainer', category: 'Services', unitPrice: 4200, costRatio: [0.4, 0.55] },
-  { name: 'Hardware Installation Service', category: 'Services', unitPrice: 450, costRatio: [0.4, 0.55] },
-  // Hardware (7) - infrastructure equipment, thinner margins
-  { name: 'Server Rack Unit', category: 'Hardware', unitPrice: 2200, costRatio: [0.55, 0.7] },
-  { name: 'Network Switch Pro', category: 'Hardware', unitPrice: 3400, costRatio: [0.55, 0.7] },
-  { name: 'Storage Array S500', category: 'Hardware', unitPrice: 7500, costRatio: [0.55, 0.7] },
-  { name: 'Industrial Router R9', category: 'Hardware', unitPrice: 1250, costRatio: [0.55, 0.7] },
-  { name: 'Power Backup UPS 3000', category: 'Hardware', unitPrice: 980, costRatio: [0.55, 0.7] },
-  { name: 'Cable Management Kit Pro', category: 'Hardware', unitPrice: 520, costRatio: [0.55, 0.7] },
-  { name: 'Workstation Dock Deluxe', category: 'Hardware', unitPrice: 899, costRatio: [0.55, 0.7] },
-];
+// All prices in LKR
+const PRODUCT_CATALOG = [
+  // ── Gaming Laptops ────────────────────────────────────────────────────────
+  { name: 'ASUS ROG Strix G16',        brand: 'ASUS',    category: 'Gaming Laptop',   processor: 'Intel Core i7-13650HX',   ram: '16GB DDR5',    storage: '512GB NVMe SSD', displaySize: '16"',   unitPrice: 185_000, costRatio: 0.88, stock: 12, reorder: 3, warranty: 24 },
+  { name: 'Lenovo Legion Pro 5',        brand: 'Lenovo',  category: 'Gaming Laptop',   processor: 'AMD Ryzen 7 7745HX',      ram: '32GB DDR5',    storage: '1TB NVMe SSD',   displaySize: '16"',   unitPrice: 210_000, costRatio: 0.88, stock: 8,  reorder: 3, warranty: 24 },
+  { name: 'MSI Raider GE76',            brand: 'MSI',     category: 'Gaming Laptop',   processor: 'Intel Core i9-12900HX',   ram: '32GB DDR5',    storage: '2TB NVMe SSD',   displaySize: '17.3"', unitPrice: 295_000, costRatio: 0.87, stock: 4,  reorder: 2, warranty: 24 },
+  { name: 'Acer Predator Helios 300',   brand: 'Acer',    category: 'Gaming Laptop',   processor: 'Intel Core i7-12700H',    ram: '16GB DDR4',    storage: '512GB NVMe SSD', displaySize: '15.6"', unitPrice: 162_000, costRatio: 0.87, stock: 6,  reorder: 3, warranty: 12 },
+  { name: 'HP Omen 16',                 brand: 'HP',      category: 'Gaming Laptop',   processor: 'AMD Ryzen 7 6800H',       ram: '16GB DDR5',    storage: '1TB NVMe SSD',   displaySize: '16.1"', unitPrice: 178_000, costRatio: 0.87, stock: 7,  reorder: 3, warranty: 12 },
+  // ── Ultrabooks ────────────────────────────────────────────────────────────
+  { name: 'MacBook Air M2',             brand: 'Apple',   category: 'Ultrabook',       processor: 'Apple M2 (8-core CPU)',   ram: '8GB Unified',  storage: '256GB SSD',       displaySize: '13.6"', unitPrice: 142_000, costRatio: 0.84, stock: 18, reorder: 5, warranty: 12 },
+  { name: 'MacBook Air M3 15"',         brand: 'Apple',   category: 'Ultrabook',       processor: 'Apple M3 (8-core CPU)',   ram: '16GB Unified', storage: '512GB SSD',       displaySize: '15.3"', unitPrice: 198_000, costRatio: 0.85, stock: 10, reorder: 4, warranty: 12 },
+  { name: 'Dell XPS 13',                brand: 'Dell',    category: 'Ultrabook',       processor: 'Intel Core i7-1360P',    ram: '16GB LPDDR5',  storage: '512GB NVMe SSD', displaySize: '13.4"', unitPrice: 158_000, costRatio: 0.86, stock: 9,  reorder: 4, warranty: 12 },
+  { name: 'LG Gram 14',                 brand: 'LG',      category: 'Ultrabook',       processor: 'Intel Core i7-1360P',    ram: '16GB LPDDR5',  storage: '512GB NVMe SSD', displaySize: '14"',   unitPrice: 145_000, costRatio: 0.85, stock: 7,  reorder: 3, warranty: 12 },
+  { name: 'Lenovo ThinkPad X1 Carbon',  brand: 'Lenovo',  category: 'Ultrabook',       processor: 'Intel Core i7-1365U',    ram: '16GB LPDDR5',  storage: '512GB NVMe SSD', displaySize: '14"',   unitPrice: 172_000, costRatio: 0.86, stock: 8,  reorder: 3, warranty: 36 },
+  // ── Business Laptops ──────────────────────────────────────────────────────
+  { name: 'Dell Latitude 5540',         brand: 'Dell',    category: 'Business Laptop', processor: 'Intel Core i5-1345U',    ram: '8GB DDR4',     storage: '256GB SSD',       displaySize: '15.6"', unitPrice: 88_000,  costRatio: 0.84, stock: 15, reorder: 5, warranty: 36 },
+  { name: 'HP EliteBook 840 G10',       brand: 'HP',      category: 'Business Laptop', processor: 'Intel Core i7-1355U',    ram: '16GB DDR5',    storage: '512GB NVMe SSD', displaySize: '14"',   unitPrice: 125_000, costRatio: 0.85, stock: 11, reorder: 4, warranty: 36 },
+  { name: 'Lenovo ThinkPad E15',        brand: 'Lenovo',  category: 'Business Laptop', processor: 'Intel Core i5-1235U',    ram: '8GB DDR4',     storage: '512GB NVMe SSD', displaySize: '15.6"', unitPrice: 82_000,  costRatio: 0.84, stock: 14, reorder: 5, warranty: 12 },
+  { name: 'ASUS ExpertBook B7',         brand: 'ASUS',    category: 'Business Laptop', processor: 'Intel Core i7-1165G7',   ram: '16GB DDR4',    storage: '512GB NVMe SSD', displaySize: '14"',   unitPrice: 118_000, costRatio: 0.83, stock: 9,  reorder: 4, warranty: 24 },
+  // ── Standard Laptops ──────────────────────────────────────────────────────
+  { name: 'HP Pavilion 15',             brand: 'HP',      category: 'Standard Laptop', processor: 'Intel Core i5-1235U',    ram: '8GB DDR4',     storage: '512GB SSD',       displaySize: '15.6"', unitPrice: 68_000,  costRatio: 0.81, stock: 22, reorder: 8, warranty: 12 },
+  { name: 'Dell Inspiron 3520',         brand: 'Dell',    category: 'Standard Laptop', processor: 'Intel Core i3-1215U',    ram: '8GB DDR4',     storage: '256GB SSD',       displaySize: '15.6"', unitPrice: 52_000,  costRatio: 0.81, stock: 18, reorder: 8, warranty: 12 },
+  { name: 'Lenovo IdeaPad Slim 3',      brand: 'Lenovo',  category: 'Standard Laptop', processor: 'AMD Ryzen 5 7520U',      ram: '8GB DDR5',     storage: '512GB NVMe SSD', displaySize: '15.6"', unitPrice: 58_000,  costRatio: 0.81, stock: 20, reorder: 8, warranty: 12 },
+  { name: 'Acer Aspire 5',              brand: 'Acer',    category: 'Standard Laptop', processor: 'Intel Core i5-1235U',    ram: '8GB DDR4',     storage: '512GB NVMe SSD', displaySize: '15.6"', unitPrice: 62_000,  costRatio: 0.81, stock: 16, reorder: 8, warranty: 12 },
+  // ── Workstations ──────────────────────────────────────────────────────────
+  { name: 'Dell Precision 5680',        brand: 'Dell',    category: 'Workstation',     processor: 'Intel Core i9-13900H',   ram: '32GB DDR5',    storage: '1TB NVMe SSD',   displaySize: '16"',   unitPrice: 385_000, costRatio: 0.88, stock: 4,  reorder: 2, warranty: 36 },
+  { name: 'HP ZBook Fury G10',          brand: 'HP',      category: 'Workstation',     processor: 'Intel Core i9-13950HX',  ram: '64GB DDR5',    storage: '2TB NVMe SSD',   displaySize: '16"',   unitPrice: 450_000, costRatio: 0.88, stock: 3,  reorder: 2, warranty: 36 },
+  { name: 'MacBook Pro 16" M3 Max',     brand: 'Apple',   category: 'Workstation',     processor: 'Apple M3 Max (14-core)', ram: '36GB Unified', storage: '1TB SSD',         displaySize: '16.2"', unitPrice: 420_000, costRatio: 0.88, stock: 3,  reorder: 2, warranty: 12 },
+  // ── Accessories ───────────────────────────────────────────────────────────
+  { name: 'Logitech MX Master 3S',      brand: 'Logitech', category: 'Accessories', processor: null, ram: null, storage: null, displaySize: null, unitPrice: 12_500, costRatio: 0.74, stock: 35, reorder: 10, warranty: 12 },
+  { name: 'Kingston 16GB DDR4 3200MHz', brand: 'Kingston', category: 'Accessories', processor: null, ram: null, storage: null, displaySize: null, unitPrice: 8_500,  costRatio: 0.73, stock: 40, reorder: 10, warranty: 36 },
+  { name: 'Crucial 1TB NVMe SSD',       brand: 'Crucial',  category: 'Accessories', processor: null, ram: null, storage: null, displaySize: null, unitPrice: 14_000, costRatio: 0.75, stock: 30, reorder: 10, warranty: 60 },
+  { name: 'Targus 15.6" Laptop Bag',    brand: 'Targus',   category: 'Accessories', processor: null, ram: null, storage: null, displaySize: null, unitPrice: 4_200,  costRatio: 0.67, stock: 45, reorder: 15, warranty: 12 },
+] as const;
 
 const SKU_PREFIX: Record<string, string> = {
-  Electronics: 'EL',
-  Software: 'SW',
-  Services: 'SV',
-  Hardware: 'HW',
+  'Gaming Laptop':   'GL',
+  'Ultrabook':       'UB',
+  'Business Laptop': 'BL',
+  'Standard Laptop': 'SL',
+  'Workstation':     'WS',
+  'Accessories':     'AC',
 };
-const SKU_BASE: Record<string, number> = { Electronics: 1000, Software: 2000, Services: 3000, Hardware: 4000 };
 
-// Products intentionally running below their reorder level (inventory alerts)
-const LOW_STOCK_INDICES = new Set([2, 6, 12, 17, 22, 27]);
+// How often each category sells relative to others (accessories sell most units)
+const CATEGORY_POPULARITY: Record<string, number> = {
+  'Gaming Laptop':   1.3,
+  'Ultrabook':       1.5,
+  'Business Laptop': 1.0,
+  'Standard Laptop': 1.8,
+  'Workstation':     0.4,
+  'Accessories':     2.2,
+};
 
 function buildProducts(): { drafts: ProductDraft[]; popularity: number[] } {
-  const skuCounters: Record<string, number> = {};
+  const counters: Record<string, number> = {};
   const drafts: ProductDraft[] = [];
   const popularity: number[] = [];
 
-  PRODUCT_CATALOG.forEach((entry, i) => {
-    skuCounters[entry.category] = (skuCounters[entry.category] ?? 0) + 1;
-    const isLowStock = LOW_STOCK_INDICES.has(i);
-    const reorderLevel = isLowStock ? randInt(25, 50) : randInt(10, 50);
-    const stockQuantity = isLowStock ? randInt(3, 20) : randInt(60, 500);
-
+  for (const entry of PRODUCT_CATALOG) {
+    counters[entry.category] = (counters[entry.category] ?? 0) + 1;
+    const sku = `${SKU_PREFIX[entry.category]}-${String(counters[entry.category]).padStart(3, '0')}`;
     drafts.push({
       name: entry.name,
-      sku: `${SKU_PREFIX[entry.category]}-${SKU_BASE[entry.category] + skuCounters[entry.category]}`,
+      sku,
+      brand: entry.brand,
       category: entry.category,
+      processor: entry.processor ?? null,
+      ram: entry.ram ?? null,
+      storage: entry.storage ?? null,
+      displaySize: entry.displaySize ?? null,
       unitPrice: entry.unitPrice,
-      costPrice: round2(entry.unitPrice * randFloat(entry.costRatio[0], entry.costRatio[1])),
-      stockQuantity,
-      reorderLevel,
+      costPrice: round2(entry.unitPrice * entry.costRatio),
+      stockQuantity: entry.stock,
+      reorderLevel: entry.reorder,
+      warrantyMonths: entry.warranty,
     });
-    popularity.push(randFloat(0.6, 1.8));
-  });
+    // Per-product popularity = category weight × small random jitter
+    popularity.push(CATEGORY_POPULARITY[entry.category] * randFloat(0.75, 1.25));
+  }
 
   return { drafts, popularity };
 }
 
-/* -------------------------------------------------------------------------- */
-/*  Sales (Jan 2025 - Jun 2026, ~2,000 records)                               */
-/* -------------------------------------------------------------------------- */
+/* ── Sales (Jan 2025 – Jun 2026) ─────────────────────────────────────────── */
 
-const SALE_MONTHS = 18; // Jan 2025 -> Jun 2026
-const BASE_MONTHLY_SALES = 94; // tuned so the total lands around 2,000
+const SALE_MONTHS = 18;
+const BASE_MONTHLY_SALES = 22;
+
+const PAYMENT_MODES   = ['Cash', 'Card', 'Bank Transfer', 'Lease Financing'] as const;
+const PAYMENT_WEIGHTS = [0.25, 0.45, 0.20, 0.10]; // Card most common in modern Sri Lanka
 
 interface SaleRow {
-  customerId: number;
-  productId: number;
-  quantity: number;
-  unitPrice: number;
+  customerId:  number;
+  productId:   number;
+  quantity:    number;
+  unitPrice:   number;
   totalAmount: number;
-  saleDate: Date;
-  region: string;
+  saleDate:    Date;
+  region:      string;
+  paymentMode: string;
 }
 
 /**
- * Seasonal pattern built from sine waves: a strong Q4 peak (holiday season)
- * and a soft Q1 dip. Peaks in November at ~1.4x, bottoms out around ~0.8x.
+ * Sri Lankan seasonal factor for tech retail:
+ *  - April  (month 3):  Sinhala/Tamil New Year — big gift & upgrade season
+ *  - Aug/Sep (month 7-8): Back-to-school & corporate refresh
+ *  - Nov/Dec (month 10-11): Year-end corporate budgets + festive shopping
+ *  - Jan/Feb (month 0-1): Post-holiday dip
  */
-function seasonalFactor(monthOfYear: number): number {
-  return (
-    1 +
-    0.28 * Math.sin((2 * Math.PI * (monthOfYear - 7)) / 12) + // annual wave, peaking in November
-    0.12 * Math.sin((4 * Math.PI * (monthOfYear - 8.5)) / 12) // sharpens the Q4 peak / Q1 dip
-  );
+function seasonalFactor(m: number): number {
+  const annual = 0.35 * Math.sin((2 * Math.PI * (m - 7)) / 12);  // broad Nov peak
+  const newYear = 0.25 * Math.exp(-0.5 * ((m - 3) / 1.0) ** 2); // sharp April spike
+  return 1.0 + annual + newYear;
 }
 
 function buildSales(
-  customers: Array<{ id: number; region: string; acquisitionDate: Date }>,
-  products: Array<{ id: number; unitPrice: number; popularity: number }>,
+  customers: Array<{ id: number; region: string; segment: string; acquisitionDate: Date }>,
+  products:  Array<{ id: number; unitPrice: number; category: string; popularity: number }>,
 ): SaleRow[] {
-  const sales: SaleRow[] = [];
+  const rows: SaleRow[] = [];
 
   for (let monthIndex = 0; monthIndex < SALE_MONTHS; monthIndex++) {
-    const year = 2025 + Math.floor(monthIndex / 12);
+    const year        = 2025 + Math.floor(monthIndex / 12);
     const monthOfYear = monthIndex % 12;
-    const growth = Math.pow(1.025, monthIndex); // ~2.5% month-over-month growth
-    const jitter = 1 + (rand() - 0.5) * 0.1; // +/- 5% noise
-    const salesThisMonth = Math.max(
-      8,
-      Math.round(BASE_MONTHLY_SALES * growth * seasonalFactor(monthOfYear) * jitter),
-    );
+    const growth      = Math.pow(1.02, monthIndex);           // ~2% MoM growth
+    const jitter      = 1 + (rand() - 0.5) * 0.12;
+    const salesCount  = Math.max(5, Math.round(BASE_MONTHLY_SALES * growth * seasonalFactor(monthOfYear) * jitter));
     const daysInMonth = new Date(year, monthOfYear + 1, 0).getDate();
 
-    for (let i = 0; i < salesThisMonth; i++) {
-      // Random day + business hours. Keeping the hour within 9-15 makes the
-      // UTC date equal the local date for common timezones, so sales stay
-      // inside their intended month no matter how dates are grouped later.
-      const saleDate = new Date(
-        year,
-        monthOfYear,
-        randInt(1, daysInMonth),
-        randInt(9, 15),
-        randInt(0, 59),
-        randInt(0, 59),
-      );
+    for (let i = 0; i < salesCount; i++) {
+      const saleDate = new Date(year, monthOfYear, randInt(1, daysInMonth), randInt(9, 18), randInt(0, 59));
 
-      // Only customers acquired before the sale date can buy
-      const eligible = customers.filter(
-        (c) => c.acquisitionDate.getTime() <= saleDate.getTime(),
-      );
+      // Only customers acquired before the sale can buy
+      const eligible = customers.filter(c => c.acquisitionDate <= saleDate);
       const customer = pick(eligible.length > 0 ? eligible : customers);
-      const product = weightedPick(products, (p) => p.popularity);
+      const product  = weightedPick(products, p => p.popularity);
 
-      // Occasional promotional discount of 5-15%
-      const discountFactor = rand() < 0.25 ? 1 - randFloat(0.05, 0.15) : 1;
-      const unitPrice = round2(product.unitPrice * discountFactor);
-      const quantity = randInt(1, 20);
+      // Corporate & Education bulk-buy; Gaming & Individual buy 1-2 units
+      const isAccessory = product.category === 'Accessories';
+      const maxQty = isAccessory ? 5
+        : customer.segment === 'Corporate'  ? 20
+        : customer.segment === 'Education'  ? 15
+        : 2;
+      const quantity = randInt(1, maxQty);
 
-      sales.push({
-        customerId: customer.id,
-        productId: product.id,
+      // ~22% chance of a promotional discount (5–15%)
+      const unitPrice = rand() < 0.22
+        ? round2(product.unitPrice * (1 - randFloat(0.05, 0.15)))
+        : product.unitPrice;
+
+      // Weighted payment mode pick
+      let ticket = rand();
+      let paymentMode = 'Cash';
+      for (let p = 0; p < PAYMENT_MODES.length; p++) {
+        ticket -= PAYMENT_WEIGHTS[p];
+        if (ticket <= 0) { paymentMode = PAYMENT_MODES[p]; break; }
+      }
+
+      rows.push({
+        customerId:  customer.id,
+        productId:   product.id,
         quantity,
         unitPrice,
         totalAmount: round2(quantity * unitPrice),
         saleDate,
-        region: customer.region, // region always matches the customer
+        region:      customer.region,
+        paymentMode,
       });
     }
   }
 
-  return sales;
+  return rows;
 }
 
-/* -------------------------------------------------------------------------- */
-/*  Financial records (18 months of monthly P&L lines)                        */
-/* -------------------------------------------------------------------------- */
+/* ── Financial Records (18 months of monthly P&L in LKR) ────────────────── */
 
 interface FinancialRow {
   recordDate: Date;
   recordType: string;
-  category: string;
-  amount: number;
+  category:   string;
+  amount:     number;
   description: string;
 }
 
-const SALARY_DEPARTMENTS: Array<[string, number]> = [
-  ['Engineering', 0.38],
-  ['Sales', 0.22],
-  ['Customer Support', 0.13],
-  ['Operations', 0.1],
-  ['General & Administrative', 0.09],
-  ['Executive', 0.08],
+// Store staff list – roles and base monthly salaries in LKR
+const STAFF = [
+  { role: 'Store Manager',       salary: 150_000 },
+  { role: 'Senior Sales Executive', salary: 95_000 },
+  { role: 'Sales Executive',     salary: 75_000 },
+  { role: 'Sales Executive',     salary: 75_000 },
+  { role: 'Sales Executive',     salary: 75_000 },
+  { role: 'Service Technician',  salary: 85_000 },
+  { role: 'Service Technician',  salary: 85_000 },
+  { role: 'Admin & Accounts',    salary: 65_000 },
 ];
+const SALARY_BASE = STAFF.reduce((s, e) => s + e.salary, 0); // 705,000 LKR
 
 const MARKETING_CHANNELS: Array<[string, number]> = [
-  ['Digital Advertising', 0.32],
-  ['Events & Conferences', 0.22],
-  ['Content & SEO', 0.15],
-  ['PR & Brand', 0.13],
-  ['Partner Programs', 0.18],
+  ['Social Media Advertising', 0.35],
+  ['Print & Newspaper',        0.20],
+  ['Tech Exhibitions',         0.25],
+  ['Promotions & Discounts',   0.20],
 ];
 
 const UTILITY_LINES: Array<[string, number]> = [
-  ['Electricity', 0.55],
-  ['Water & Sewage', 0.15],
-  ['Internet & Telecom', 0.3],
+  ['Electricity & Air Conditioning', 0.60],
+  ['Internet & Telecom',             0.25],
+  ['Water & Sanitation',             0.15],
 ];
-
-const RND_LINES: Array<[string, number]> = [
-  ['Product Development', 0.5],
-  ['Research', 0.3],
-  ['Tools & Licenses', 0.2],
-];
-
-const RENT_TOTAL = 25_000; // fixed, split between HQ and warehouse
-const TAX_RATE = 0.15;
 
 function buildFinancialRecords(
-  sales: SaleRow[],
-  productCategoryById: Map<number, string>,
+  sales:      SaleRow[],
+  productById: Map<number, { category: string; costPrice: number; unitPrice: number }>,
 ): FinancialRow[] {
-  // Aggregate actual sales revenue per month and per product category
-  const monthlyRevenue = new Map<string, Map<string, number>>();
+  // Aggregate revenue & COGS per month per product category from actual sales
+  const monthRevenue = new Map<string, Map<string, number>>();
+  const monthCogs    = new Map<string, Map<string, number>>();
+
   for (const sale of sales) {
-    const key = `${sale.saleDate.getFullYear()}-${sale.saleDate.getMonth()}`;
-    const category = productCategoryById.get(sale.productId) ?? 'Other';
-    let byCategory = monthlyRevenue.get(key);
-    if (!byCategory) {
-      byCategory = new Map<string, number>();
-      monthlyRevenue.set(key, byCategory);
-    }
-    byCategory.set(category, (byCategory.get(category) ?? 0) + sale.totalAmount);
+    const key     = `${sale.saleDate.getFullYear()}-${sale.saleDate.getMonth()}`;
+    const product = productById.get(sale.productId)!;
+    // Scale COGS proportionally if a discount was applied
+    const cogsUnit  = product.costPrice * (sale.unitPrice / product.unitPrice);
+    const cogsTotal = round2(cogsUnit * sale.quantity);
+
+    if (!monthRevenue.has(key)) monthRevenue.set(key, new Map());
+    if (!monthCogs.has(key))    monthCogs.set(key,    new Map());
+
+    const rev  = monthRevenue.get(key)!;
+    const cogs = monthCogs.get(key)!;
+    rev.set(product.category,  (rev.get(product.category)  ?? 0) + sale.totalAmount);
+    cogs.set(product.category, (cogs.get(product.category) ?? 0) + cogsTotal);
   }
 
   const records: FinancialRow[] = [];
-  let salaryBase = randFloat(85_000, 95_000); // grows to ~$97K-$109K over 18 months
+  let salaryMultiplier = 1.0; // salaries grow 0.5%/month
 
   for (let monthIndex = 0; monthIndex < SALE_MONTHS; monthIndex++) {
-    const year = 2025 + Math.floor(monthIndex / 12);
-    const monthOfYear = monthIndex % 12;
-    const key = `${year}-${monthOfYear}`;
-    const revenueByCategory = monthlyRevenue.get(key) ?? new Map<string, number>();
-    const totalRevenue = [...revenueByCategory.values()].reduce((sum, v) => sum + v, 0);
-    const monthLabel = new Date(year, monthOfYear, 1).toLocaleString('en-US', { month: 'short' });
-    const daysInMonth = new Date(year, monthOfYear + 1, 0).getDate();
-    // Random day + business hours (see note in buildSales about UTC alignment)
-    const recordDate = () =>
-      new Date(year, monthOfYear, randInt(1, daysInMonth), randInt(9, 15), randInt(0, 59), randInt(0, 59));
+    const year        = 2025 + Math.floor(monthIndex / 12);
+    const month       = monthIndex % 12;
+    const key         = `${year}-${month}`;
+    const monthLabel  = new Date(year, month, 1).toLocaleString('en-US', { month: 'long' });
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const rd = () => new Date(year, month, randInt(1, daysInMonth), randInt(9, 17), randInt(0, 59));
 
-    // Revenue - one line per product category, summing to the month's actual sales
-    for (const [category, amount] of revenueByCategory) {
-      records.push({
-        recordDate: recordDate(),
-        recordType: 'Revenue',
-        category,
-        amount: round2(amount),
-        description: `Sales revenue - ${category} product line (${monthLabel} ${year})`,
-      });
+    const revByCategory  = monthRevenue.get(key) ?? new Map<string, number>();
+    const cogsByCategory = monthCogs.get(key)    ?? new Map<string, number>();
+    const totalRevenue   = [...revByCategory.values()].reduce((s, v) => s + v, 0);
+
+    // Revenue – one line per laptop category
+    for (const [category, amount] of revByCategory) {
+      records.push({ recordDate: rd(), recordType: 'Revenue', category, amount: round2(amount), description: `Sales revenue – ${category} (${monthLabel} ${year})` });
     }
 
-    // COGS - 40-50% of revenue, one line per product category
-    const cogsRatio = randFloat(0.4, 0.5);
+    // COGS – one line per laptop category
     let totalCogs = 0;
-    for (const [category, amount] of revenueByCategory) {
-      const cogs = round2(amount * cogsRatio);
-      totalCogs += cogs;
-      records.push({
-        recordDate: recordDate(),
-        recordType: 'COGS',
-        category: 'COGS',
-        amount: cogs,
-        description: `Cost of goods sold - ${category} (${monthLabel} ${year})`,
-      });
+    for (const [category, amount] of cogsByCategory) {
+      const cogsAmt = round2(amount);
+      totalCogs += cogsAmt;
+      records.push({ recordDate: rd(), recordType: 'COGS', category: 'COGS', amount: cogsAmt, description: `Cost of goods sold – ${category} (${monthLabel} ${year})` });
     }
 
-    // Salaries - $80K-$120K/month with slight growth, split by department
-    const totalSalaries = round2(salaryBase);
-    salaryBase *= 1.008;
-    for (const [department, share] of SALARY_DEPARTMENTS) {
-      records.push({
-        recordDate: recordDate(),
-        recordType: 'Expense',
-        category: 'Salaries',
-        amount: round2(totalSalaries * share),
-        description: `Salaries - ${department} (${monthLabel} ${year})`,
-      });
+    // Salaries – slight growth each month
+    let totalSalaries = 0;
+    for (const staff of STAFF) {
+      const amount = round2(staff.salary * salaryMultiplier);
+      totalSalaries += amount;
+      records.push({ recordDate: rd(), recordType: 'Expense', category: 'Salaries', amount, description: `Salary – ${staff.role} (${monthLabel} ${year})` });
     }
+    salaryMultiplier *= 1.005;
 
-    // Marketing - $15K-$40K/month, boosted during Q4
-    const isQ4 = monthOfYear >= 9;
-    const marketingTotal = Math.min(40_000, randFloat(16_000, 26_000) * (isQ4 ? 1.4 : 1));
+    // Rent – showroom (Colombo 03) + warehouse (Peliyagoda)
+    const rentShowroom  = 180_000;
+    const rentWarehouse = 45_000;
+    records.push({ recordDate: rd(), recordType: 'Expense', category: 'Rent', amount: rentShowroom,  description: `Showroom rent – Colombo 03 (${monthLabel} ${year})` });
+    records.push({ recordDate: rd(), recordType: 'Expense', category: 'Rent', amount: rentWarehouse, description: `Warehouse rent – Peliyagoda (${monthLabel} ${year})` });
+
+    // Marketing – boosted in April (New Year) and Nov–Dec (year-end)
+    const isNewYear = month === 3;
+    const isFestive = month >= 10;
+    const mktBase   = randFloat(40_000, 80_000);
+    const mktTotal  = mktBase * (isNewYear ? 1.6 : isFestive ? 1.35 : 1.0);
     for (const [channel, share] of MARKETING_CHANNELS) {
-      records.push({
-        recordDate: recordDate(),
-        recordType: 'Expense',
-        category: 'Marketing',
-        amount: round2(marketingTotal * share),
-        description: `Marketing - ${channel} (${monthLabel} ${year})`,
-      });
+      records.push({ recordDate: rd(), recordType: 'Expense', category: 'Marketing', amount: round2(mktTotal * share), description: `Marketing – ${channel} (${monthLabel} ${year})` });
     }
 
-    // Rent - fixed $25K/month
-    records.push({
-      recordDate: recordDate(),
-      recordType: 'Expense',
-      category: 'Rent',
-      amount: 18_000,
-      description: `Rent - Headquarters office (${monthLabel} ${year})`,
-    });
-    records.push({
-      recordDate: recordDate(),
-      recordType: 'Expense',
-      category: 'Rent',
-      amount: 7_000,
-      description: `Rent - Warehouse & facilities (${monthLabel} ${year})`,
-    });
-
-    // Utilities - $5K-$8K/month
-    const utilitiesTotal = randFloat(5_000, 8_000);
+    // Utilities – higher in Q4 (A/C running more)
+    const utilTotal = randFloat(25_000, 45_000) * (isFestive ? 1.15 : 1.0);
     for (const [line, share] of UTILITY_LINES) {
-      records.push({
-        recordDate: recordDate(),
-        recordType: 'Expense',
-        category: 'Utilities',
-        amount: round2(utilitiesTotal * share),
-        description: `Utilities - ${line} (${monthLabel} ${year})`,
-      });
+      records.push({ recordDate: rd(), recordType: 'Expense', category: 'Utilities', amount: round2(utilTotal * share), description: `Utilities – ${line} (${monthLabel} ${year})` });
     }
 
-    // R&D - $8K-$15K/month
-    const rndTotal = randFloat(8_000, 15_000);
-    for (const [line, share] of RND_LINES) {
-      records.push({
-        recordDate: recordDate(),
-        recordType: 'Expense',
-        category: 'R&D',
-        amount: round2(rndTotal * share),
-        description: `R&D - ${line} (${monthLabel} ${year})`,
-      });
-    }
-
-    // Tax - 15% of the month's profit, when positive
-    const totalExpenses = totalCogs + totalSalaries + marketingTotal + RENT_TOTAL + utilitiesTotal + rndTotal;
+    // Tax – 18% of positive monthly profit (Sri Lanka corporate tax)
+    const totalExpenses = totalCogs + totalSalaries + mktTotal + rentShowroom + rentWarehouse + utilTotal;
     const profit = totalRevenue - totalExpenses;
     if (profit > 0) {
-      records.push({
-        recordDate: recordDate(),
-        recordType: 'Tax',
-        category: 'Tax',
-        amount: round2(profit * TAX_RATE),
-        description: `Corporate income tax - 15% of net profit (${monthLabel} ${year})`,
-      });
+      records.push({ recordDate: rd(), recordType: 'Tax', category: 'Tax', amount: round2(profit * 0.18), description: `Corporate income tax – 18% of net profit (${monthLabel} ${year})` });
     }
   }
 
   return records;
 }
 
-/* -------------------------------------------------------------------------- */
-/*  Main                                                                      */
-/* -------------------------------------------------------------------------- */
+/* ── Main ────────────────────────────────────────────────────────────────── */
 
-const INSERT_CHUNK = 500; // keep each bulk insert within SQLite parameter limits
+const INSERT_CHUNK = 250; // keep each insert well within SQLite's parameter limit
 
 async function main(): Promise<void> {
   console.log('Clearing existing data ...');
@@ -523,30 +461,30 @@ async function main(): Promise<void> {
   await prisma.customer.deleteMany();
   await prisma.product.deleteMany();
 
-  console.log('Seeding customers ...');
+  console.log('Seeding 40 customers ...');
   await prisma.customer.createMany({ data: buildCustomers() });
   const customers = await prisma.customer.findMany({ orderBy: { id: 'asc' } });
 
-  console.log('Seeding products ...');
+  console.log('Seeding 25 products ...');
   const { drafts: productDrafts, popularity } = buildProducts();
   await prisma.product.createMany({ data: productDrafts });
   const productRows = await prisma.product.findMany({ orderBy: { id: 'asc' } });
   const productPool = productRows.map((row, i) => ({ ...row, popularity: popularity[i] }));
 
-  console.log('Seeding sales (Jan 2025 - Jun 2026) ...');
+  console.log('Seeding sales (Jan 2025 – Jun 2026) ...');
   const sales = buildSales(customers, productPool);
   for (let i = 0; i < sales.length; i += INSERT_CHUNK) {
     await prisma.sale.createMany({ data: sales.slice(i, i + INSERT_CHUNK) });
   }
 
   console.log('Seeding financial records ...');
-  const productCategoryById = new Map(productRows.map((p) => [p.id, p.category]));
-  const financialRecords = buildFinancialRecords(sales, productCategoryById);
+  const productById = new Map(productRows.map(p => [p.id, { category: p.category, costPrice: p.costPrice, unitPrice: p.unitPrice }]));
+  const financialRecords = buildFinancialRecords(sales, productById);
   for (let i = 0; i < financialRecords.length; i += INSERT_CHUNK) {
     await prisma.financialRecord.createMany({ data: financialRecords.slice(i, i + INSERT_CHUNK) });
   }
 
-  console.log('Seed complete.');
+  console.log('\n✅  Lumina Laptop Store seed complete!');
   console.log(`  Customers:         ${customers.length}`);
   console.log(`  Products:          ${productRows.length}`);
   console.log(`  Sales:             ${sales.length}`);

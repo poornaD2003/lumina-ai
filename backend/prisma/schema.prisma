@@ -13,24 +13,31 @@ model Customer {
   id              Int      @id @default(autoincrement())
   name            String
   email           String   @unique
-  segment         String   // Enterprise, SMB, Startup, Consumer
-  region          String   // North, South, East, West
-  lifetimeValue   Float
+  phone           String?
+  segment         String   // Corporate, Education, Gaming, Individual
+  region          String   // West, South, North, East, Central
+  lifetimeValue   Float    @default(0)
   acquisitionDate DateTime
   isActive        Boolean  @default(true)
   sales           Sale[]
 }
 
 model Product {
-  id            Int     @id @default(autoincrement())
-  name          String
-  sku           String  @unique
-  category      String  // Electronics, Software, Services, Hardware
-  unitPrice     Float
-  costPrice     Float
-  stockQuantity Int
-  reorderLevel  Int     @default(10)
-  sales         Sale[]
+  id             Int     @id @default(autoincrement())
+  name           String
+  sku            String  @unique
+  brand          String  // ASUS, Dell, HP, Apple, Lenovo, MSI, Acer, LG, etc.
+  category       String  // Gaming Laptop, Ultrabook, Business Laptop, Standard Laptop, Workstation, Accessories
+  processor      String?
+  ram            String?
+  storage        String?
+  displaySize    String?
+  unitPrice      Float
+  costPrice      Float
+  stockQuantity  Int
+  reorderLevel   Int     @default(5)
+  warrantyMonths Int     @default(12)
+  sales          Sale[]
 }
 
 model Sale {
@@ -42,6 +49,7 @@ model Sale {
   totalAmount Float
   saleDate    DateTime
   region      String
+  paymentMode String   // Cash, Card, Bank Transfer, Lease Financing
   customer    Customer @relation(fields: [customerId], references: [id])
   product     Product  @relation(fields: [productId], references: [id])
 }
@@ -50,7 +58,7 @@ model FinancialRecord {
   id          Int      @id @default(autoincrement())
   recordDate  DateTime
   recordType  String   // Revenue, Expense, COGS, Tax
-  category    String   // Salaries, Marketing, Rent, COGS, etc.
+  category    String   // Gaming Laptop, Ultrabook, Salaries, Rent, Marketing, etc.
   amount      Float
   description String?
 }
