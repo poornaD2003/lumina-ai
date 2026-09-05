@@ -271,7 +271,14 @@ export const applySuggestedPrice = async (req: Request, res: Response) => {
 export const suggestAllProductPrices = async (_req: Request, res: Response) => {
     try {
         const products = await prisma.product.findMany({ orderBy: { name: 'asc' } });
-        const suggestions = [];
+        const suggestions: Array<{
+            productId: number;
+            productName: string;
+            currentPrice: number;
+            aiSuggestedPrice: number;
+            recommendedMarginPercent: number;
+            reasoning: string;
+        }> = [];
         for (const product of products) {
             const liveCompetitors = await fetchRealCompetitorPrices(product.name);
             const competitorPrices = liveCompetitors.map(

@@ -75,7 +75,16 @@ export const generatePurchaseOrders = async (req: Request, res: Response) => {
 
         // Persist the purchase orders first, so the store keeps a live record
         // of what is on order even if the ZIP download fails afterwards.
-        const createdOrders = [];
+        const createdOrders: Array<
+            Awaited<ReturnType<typeof prisma.purchaseOrder.create>> & {
+                items: Array<{
+                    productId: number;
+                    productName: string;
+                    quantity: number;
+                    unitCost: number;
+                }>;
+            }
+        > = [];
         for (const [supplier, group] of linesBySupplier.entries()) {
             const totalAmount = group.reduce((acc, line) => acc + line.quantity * line.unitCost, 0);
             const maxLeadTime = Math.max(...group.map((line) => line.leadTimeDays));
