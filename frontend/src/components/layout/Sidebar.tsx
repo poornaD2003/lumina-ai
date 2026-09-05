@@ -1,11 +1,10 @@
 import { NavLink } from 'react-router-dom';
-import { DollarSign, LayoutDashboard, MessageSquare, Package } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, Package } from 'lucide-react';
 
 const links = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/chat', label: 'Chat', icon: MessageSquare },
   { to: '/restock-plan', label: 'Restock Plan', icon: Package },
-  { to: '/dynamic-pricing', label: 'Pricing Engine', icon: DollarSign },
   { to: '/competitor-comparison', label: 'Competitor Comparison', icon: LayoutDashboard },
 ];
 

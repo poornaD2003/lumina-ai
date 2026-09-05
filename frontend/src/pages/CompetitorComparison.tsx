@@ -32,6 +32,7 @@ type PricingProduct = Props['product'];
 
 export const CompetitorComparisonPage: React.FC = () => {
   const [products, setProducts] = useState<PricingProduct[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -55,17 +56,42 @@ export const CompetitorComparisonPage: React.FC = () => {
   if (error) return <div className="p-6 text-red-600">{error}</div>;
   if (products.length === 0) return <div className="p-6 text-slate-600">No products found.</div>;
 
+  const filteredProducts = products.filter((product) => {
+    const query = searchTerm.trim().toLowerCase();
+    return !query || [product.name, product.brand, product.category].some((value) =>
+      value.toLowerCase().includes(query),
+    );
+  });
+
   return (
     <div className="p-6 space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-800">Competitor Comparison</h1>
-        <p className="text-sm text-slate-500">Compare each product with current market prices.</p>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-800">Competitor Comparison</h1>
+          <p className="text-sm text-slate-500">Compare each product with current market prices.</p>
+        </div>
+        <label className="w-full sm:max-w-sm">
+          <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Find product</span>
+          <input
+            type="search"
+            value={searchTerm}
+            onChange={(event) => setSearchTerm(event.target.value)}
+            placeholder="Search name, brand, or category"
+            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+          />
+        </label>
       </div>
-      <div className="grid gap-6 lg:grid-cols-2">
-        {products.map((product) => (
+      {filteredProducts.length > 0 ? (
+        <div className="grid gap-6 lg:grid-cols-2">
+          {filteredProducts.map((product) => (
           <CompetitorComparisonCard key={product.id} product={product} />
-        ))}
-      </div>
+          ))}
+        </div>
+      ) : (
+        <p className="rounded-lg border border-dashed border-slate-300 p-8 text-center text-sm text-slate-500">
+          No products match "{searchTerm}".
+        </p>
+      )}
     </div>
   );
 };
@@ -74,6 +100,7 @@ export const CompetitorComparisonCard: React.FC<Props> = ({ product }) => {
   const [loading, setLoading] = useState<boolean>(false);
   const [competitors, setCompetitors] = useState<Competitor[]>([]);
   const [aiResult, setAiResult] = useState<AISuggestion | null>(null);
+  const [hasAnalyzed, setHasAnalyzed] = useState(false);
 
   const fetchAnalysis = async () => {
     if (!product.name || product.costPrice <= 0 || product.unitPrice <= 0) {
@@ -81,6 +108,7 @@ export const CompetitorComparisonCard: React.FC<Props> = ({ product }) => {
     }
 
     setLoading(true);
+    setHasAnalyzed(true);
     try {
         console.log('Sending product data:', product);
       const response = await axios.post('/api/pricing/analyze', {
@@ -185,7 +213,7 @@ export const CompetitorComparisonCard: React.FC<Props> = ({ product }) => {
         </>
       )}
 
-      {!loading && competitors.length === 0 && (
+      {!loading && hasAnalyzed && competitors.length === 0 && (
         <p className="mt-4 border-t pt-4 text-sm text-slate-500">
           No live prices were returned by the retailers for this product. Try the analysis again later.
         </p>

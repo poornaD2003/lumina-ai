@@ -5,8 +5,15 @@ import { GoogleGenAI } from '@google/genai';
 import { fetchRealCompetitorPrices } from '../services/scraperService';
 
 
-const geminiApiKey = 'AQ.Ab8RN6I3uSZkeWgYs4w8E38-qpATOQk0mYgQG0opRYSsq2B5TQ';
-const ai = geminiApiKey ? new GoogleGenAI({ apiKey: geminiApiKey }) : null;
+// Create the Gemini client lazily per request so the API key is read fresh
+// from the environment (avoids stale module-scope reads if .env changes).
+// Accepts both classic Google keys (AIza...) and newer AQ... keys.
+const getAI = (): GoogleGenAI | null => {
+    const apiKey = process.env.GEMINI_API_KEY?.trim();
+    if (!apiKey) return null;
+    if (!apiKey.startsWith('AQ') && !apiKey.startsWith('AIza')) return null;
+    return new GoogleGenAI({ apiKey });
+};
 
 type AISuggestion = {
     suggestedPrice: number;
@@ -33,7 +40,12 @@ export const getCompetitorAndAISuggestion = async (req: Request, res: Response) 
 
     // Number conversions තහවුරු කරන්න
     // Fetch live competitor data
-    const competitorData = await fetchRealCompetitorPrices(productName);
+    const scrapedCompetitors = await fetchRealCompetitorPrices(productName);
+
+    // Drop implausibly cheap listings (accessories that merely match the
+    // product name) - a genuine competitor cannot sell the same product for
+    // a fraction of our own cost.
+    const competitorData = scrapedCompetitors.filter((c) => c.price >= Number(costPrice) * 0.25);
 
     const competitorSummary = competitorData
       .map((c) => `${c.storeName}: LKR ${c.price.toLocaleString()}`)
@@ -63,6 +75,7 @@ export const getCompetitorAndAISuggestion = async (req: Request, res: Response) 
 
         let aiOutput: AISuggestion;
         try {
+            const ai = getAI();
             if (!ai) throw new Error('GEMINI_API_KEY is not configured');
             const response = await ai.models.generateContent({
                 model: 'gemini-3.5-flash',
@@ -72,7 +85,7 @@ export const getCompetitorAndAISuggestion = async (req: Request, res: Response) 
             aiOutput = JSON.parse(response.text || '{}') as AISuggestion;
             if (!aiOutput.suggestedPrice) throw new Error('AI returned no suggested price');
         } catch (error) {
-            if (geminiApiKey) {
+            if (getAI()) {
                 console.warn('AI competitor analysis unavailable, using market benchmark:', error);
             } else {
                 console.warn('GEMINI_API_KEY is not configured; using market benchmark.');
@@ -142,6 +155,7 @@ const createFallbackSuggestion = (product: PricingProduct) => {
 // backend/src/Controlller/pricingController.ts
 
 const generateAISuggestion = async (product: PricingProduct, marketCompetitorPrices: string[]) => {
+    const ai = getAI();
     if (!ai) throw new Error('GEMINI_API_KEY is not configured');
     const competitorInfo = marketCompetitorPrices.length > 0
         ? marketCompetitorPrices.join(', ')

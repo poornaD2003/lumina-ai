@@ -1,11 +1,31 @@
-import { useState, useCallback } from 'react';
-import { sendChatMessage } from '../api/client';
+import { useState, useCallback, useEffect } from 'react';
+import { sendChatMessage, fetchChatHistory, clearChatHistory } from '../api/client';
 import type { ChatMessage } from '../types';
 
 export function useChat() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Load persisted history from the database when the chat opens
+  useEffect(() => {
+    let cancelled = false;
+
+    fetchChatHistory()
+      .then((history) => {
+        if (!cancelled) setMessages(history);
+      })
+      .catch(() => {
+        // History is a nice-to-have; don't block the chat on failure
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const sendMessage = useCallback(
     async (text: string) => {
@@ -38,9 +58,14 @@ export function useChat() {
     [messages],
   );
 
-  const clearMessages = useCallback(() => {
+  const clearMessages = useCallback(async () => {
     setMessages([]);
     setError(null);
+    try {
+      await clearChatHistory();
+    } catch {
+      // Ignore clear failures; local state is already reset
+    }
   }, []);
 
   return { messages, isLoading, error, sendMessage, clearMessages };

@@ -72,8 +72,12 @@ export default function ChatPage() {
         </div>
       )}
 
-      {/* Messages or empty state */}
-      {messages.length === 0 ? (
+      {/* Messages, history loading state, or empty state */}
+      {isLoading && messages.length === 0 ? (
+        <div className="flex-1 flex items-center justify-center text-sm text-slate-400">
+          Loading conversation...
+        </div>
+      ) : messages.length === 0 ? (
         <EmptyState onSuggestionClick={sendMessage} />
       ) : (
         <ChatPanel messages={messages} isLoading={isLoading} />

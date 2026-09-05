@@ -8,6 +8,7 @@ import type {
   ForecastPoint,
   RegionSales,
   InventoryAlert,
+  ChatMessage,
 } from '../types';
 
 const api = axios.create({ baseURL: '/api' });
@@ -46,3 +47,9 @@ export const sendChatMessage = (
       history,
     })
     .then((r) => r.data);
+
+export const fetchChatHistory = () =>
+  api.get<ChatMessage[]>('/agent/history').then((r) => r.data);
+
+export const clearChatHistory = () =>
+  api.delete<{ success: boolean }>('/agent/history').then((r) => r.data);

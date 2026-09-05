@@ -76,3 +76,11 @@ model FinancialRecord {
   amount      Float
   description String?
 }
+
+model ChatMessage {
+  id          Int      @id @default(autoincrement())
+  role        String   // user, assistant
+  content     String
+  source      String?  // ai, fallback (for assistant messages)
+  createdAt   DateTime @default(now())
+}

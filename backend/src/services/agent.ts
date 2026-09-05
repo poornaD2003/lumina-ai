@@ -2,6 +2,7 @@
  * Business intelligence AI agent - combines Gemini AI chat completions with
  * live business data context. Falls back to keyword-based analytics responses
  * when no API key is configured or the AI call fails.
+ * Chat history is persisted to the database.
  */
 import OpenAI from 'openai';
 import type { ChatCompletionMessageParam } from 'openai/resources/chat/completions.js';
@@ -9,6 +10,7 @@ import { SYSTEM_PROMPT } from './prompts.js';
 import { buildContext } from './context-builder.js';
 import * as analytics from './analytics.js';
 import { getSalesForecast } from './forecast.js';
+import { prisma } from '../lib/prisma.js';
 import type { ChatResponse } from '../types/index.js';
 
 const fmtCurrency = (n: number): string =>
@@ -20,11 +22,44 @@ class BusinessAgent {
   private getOpenAI(): OpenAI | null {
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) return null;
+
+    // Gemini API keys start with 'AIzaSy'; reject obviously malformed keys early
+    // to avoid wasting retries on 400 'Invalid Auth key' errors.
+    if (!apiKey.startsWith('AQ')) {
+      console.warn(
+        'GEMINI_API_KEY does not look like a valid Gemini key (should start with AIza...). ' +
+        'Get one at https://aistudio.google.com/apikey',
+      );
+      return null;
+    }
+
     return new OpenAI({
       apiKey,
       baseURL: 'https://generativelanguage.googleapis.com/v1beta/openai',
       timeout: 30000, // 30 second timeout
     });
+  }
+
+  /**
+   * Fetch the most recent N messages from the database to seed the UI.
+   * Ordered oldest -> newest so they render as a natural conversation.
+   */
+  async getHistory(limit = 20): Promise<Array<{ role: 'user' | 'assistant'; content: string; source?: string | null }>> {
+    // Query newest first so `take` grabs the latest N, then restore
+    // chronological order for display.
+    const rows = await prisma.chatMessage.findMany({
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+    });
+    rows.reverse();
+    return rows.map((r) => ({ role: r.role as 'user' | 'assistant', content: r.content, source: r.source }));
+  }
+
+  /**
+   * Clear all persisted chat messages.
+   */
+  async clearHistory(): Promise<void> {
+    await prisma.chatMessage.deleteMany();
   }
 
   async ask(
@@ -34,17 +69,34 @@ class BusinessAgent {
     const context = await buildContext(question);
     const client = this.getOpenAI();
 
+    // Persist the user's message first so the conversation is stored even
+    // if the AI call later fails (the fallback response is also stored).
+    await prisma.chatMessage
+      .create({ data: { role: 'user', content: question } })
+      .catch((e) => console.error('Failed to save user message:', e));
+
     if (!client) {
-      return { answer: await this.fallbackResponse(question, context), source: 'fallback' };
+      const answer = await this.fallbackResponse(question, context);
+      await this.saveAssistantMessage(answer, 'fallback');
+      return { answer, source: 'fallback' };
     }
 
     try {
       const answer = await this.callGemini(client, question, history, context);
+      await this.saveAssistantMessage(answer, 'ai');
       return { answer, source: 'ai' };
     } catch (error) {
       console.error('Gemini error, using fallback:', error);
-      return { answer: await this.fallbackResponse(question, context), source: 'fallback' };
+      const answer = await this.fallbackResponse(question, context);
+      await this.saveAssistantMessage(answer, 'fallback');
+      return { answer, source: 'fallback' };
     }
+  }
+
+  private async saveAssistantMessage(content: string, source: string): Promise<void> {
+    await prisma.chatMessage
+      .create({ data: { role: 'assistant', content, source } })
+      .catch((e) => console.error('Failed to save assistant message:', e));
   }
 
   private async callGemini(
