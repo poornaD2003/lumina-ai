@@ -33,10 +33,19 @@ app.use('/api/agent', agentRoutes);
 app.use('/api/pricing', pricingRoutes);
 
 import { getRestockPlan } from './Controlller/stockController.js';
-import { generatePurchaseOrders } from './Controlller/purchaseOrderController.js';
+import {
+  generatePurchaseOrders,
+  listPurchaseOrders,
+  receivePurchaseOrder,
+  cancelPurchaseOrder,
+} from './Controlller/purchaseOrderController.js';
 
+// Restock plan + purchase order lifecycle (generate -> receive/cancel)
 app.get('/api/restock-plan', getRestockPlan);
+app.get('/api/restock-plan/orders', listPurchaseOrders);
 app.post('/api/restock-plan/generate-po', generatePurchaseOrders);
+app.post('/api/restock-plan/orders/:id/receive', receivePurchaseOrder);
+app.post('/api/restock-plan/orders/:id/cancel', cancelPurchaseOrder);
 
 // Error handler (must be last)
 app.use(errorHandler);
