@@ -1,4 +1,3 @@
-// frontend/src/pages/RestockPlanPage.tsx
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { AlertCircle, CheckCircle, Clock, Download, PackageCheck, Printer, XCircle } from 'lucide-react';

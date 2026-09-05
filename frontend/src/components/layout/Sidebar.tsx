@@ -5,7 +5,7 @@ const links = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/chat', label: 'Chat', icon: MessageSquare },
   { to: '/restock-plan', label: 'Restock Plan', icon: Package },
-  { to: '/competitor-comparison', label: 'Competitor Comparison', icon: LayoutDashboard },
+  { to: '/competitor-comparison', label: 'Price Comparison', icon: LayoutDashboard },
 ];
 
 export default function Sidebar() {

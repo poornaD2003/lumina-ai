@@ -30,7 +30,7 @@ export const AIPricingModal: React.FC<AIPricingModalProps> = ({
         setLoading(true);
         try {
             const response = await axios.post('/api/pricing/suggest-price', {
-                productId: Number(productId), // Number එකක් ලෙස යැවීම තහවුරු කරන්න
+                productId: Number(productId), 
                 marketCompetitorPrices: [
                     `Competitor A: LKR ${costPrice * 1.12}`,
                     `Competitor B: LKR ${costPrice * 1.15}`,

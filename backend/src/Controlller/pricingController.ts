@@ -1,13 +1,10 @@
-// backend/src/Controlller/pricingController.ts
 import { Request, Response } from 'express';
 import { prisma } from '../lib/prisma';
 import { GoogleGenAI } from '@google/genai';
 import { fetchRealCompetitorPrices } from '../services/scraperService';
 
 
-// Create the Gemini client lazily per request so the API key is read fresh
-// from the environment (avoids stale module-scope reads if .env changes).
-// Accepts both classic Google keys (AIza...) and newer AQ... keys.
+
 const getAI = (): GoogleGenAI | null => {
     const apiKey = process.env.GEMINI_API_KEY?.trim();
     if (!apiKey) return null;
@@ -24,7 +21,7 @@ type AISuggestion = {
 export const getCompetitorAndAISuggestion = async (req: Request, res: Response) => {
     
   try {
-    console.log('Incoming Analyze Payload:', req.body); // Terminal එකේ payload එක බලන්න
+    console.log('Incoming Analyze Payload:', req.body); 
     const { productName, costPrice, currentPrice, brand, category } = req.body;
 
         if (!productName || !Number.isFinite(Number(costPrice)) || !Number.isFinite(Number(currentPrice))) {
@@ -38,13 +35,10 @@ export const getCompetitorAndAISuggestion = async (req: Request, res: Response) 
       });
     }
 
-    // Number conversions තහවුරු කරන්න
-    // Fetch live competitor data
+   
     const scrapedCompetitors = await fetchRealCompetitorPrices(productName);
 
-    // Drop implausibly cheap listings (accessories that merely match the
-    // product name) - a genuine competitor cannot sell the same product for
-    // a fraction of our own cost.
+ 
     const competitorData = scrapedCompetitors.filter((c) => c.price >= Number(costPrice) * 0.25);
 
     const competitorSummary = competitorData

@@ -11,12 +11,7 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
-    "declaration": true,
-    "types": [
-      "node",
-      "cors",
-      "express"
-    ]
+    "declaration": true
   },
   "include": [
     "src/**/*",
