@@ -12,6 +12,7 @@
   "keywords": [],
   "type": "commonjs",
   "dependencies": {
+    "@google/genai": "^2.21.0",
     "@prisma/adapter-better-sqlite3": "7.10.0",
     "@prisma/client": "^7.10.0",
     "archiver": "^8.0.0",

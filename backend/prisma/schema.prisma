@@ -43,6 +43,9 @@ model Product {
   displaySize    String?
   unitPrice      Float
   costPrice      Float
+  competitorPrice     Float?   
+  aiSuggestedPrice    Float?   
+  aiPricingReason     String?  
   stockQuantity  Int
   reorderLevel   Int     @default(5)
   warrantyMonths Int     @default(12)
