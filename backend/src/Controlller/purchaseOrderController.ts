@@ -2,8 +2,11 @@
 import { Request, Response } from 'express';
 import PDFDocument from 'pdfkit';
 
-// CJS / ESM interop compatibility fix
-const archiver = require('archiver');
+// CJS / ESM interop compatibility fix: archiver v8 is ESM-only and exports
+// archive classes (ZipArchive, TarArchive, ...) instead of the old
+// archiver('zip', ...) factory function, so it must be required and
+// instantiated as a class (works under tsx and Node >= 22).
+const { ZipArchive } = require('archiver') as typeof import('archiver');
 
 export const generatePurchaseOrders = async (req: Request, res: Response) => {
     try {
@@ -26,13 +29,19 @@ export const generatePurchaseOrders = async (req: Request, res: Response) => {
         res.setHeader('Content-Disposition', 'attachment; filename="Purchase_Orders.zip"');
 
         // Create Archiver instance
-        const archive = archiver('zip', {
+        const archive = new ZipArchive({
             zlib: { level: 9 },
         });
 
         archive.on('error', (err: any) => {
             console.error('Archiver Error:', err);
-            throw err;
+            // Throwing inside an event handler bypasses the surrounding
+            // try/catch and would crash the process; fail the response instead.
+            if (!res.headersSent) {
+                res.status(500).json({ error: 'Failed to generate Purchase Orders' });
+            } else {
+                res.destroy();
+            }
         });
 
         // Pipe ZIP stream directly to Express response

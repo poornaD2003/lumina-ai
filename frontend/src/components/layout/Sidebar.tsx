@@ -6,6 +6,7 @@ const links = [
   { to: '/chat', label: 'Chat', icon: MessageSquare },
   { to: '/restock-plan', label: 'Restock Plan', icon: Package },
   { to: '/dynamic-pricing', label: 'Pricing Engine', icon: DollarSign },
+  { to: '/competitor-comparison', label: 'Competitor Comparison', icon: LayoutDashboard },
 ];
 
 export default function Sidebar() {

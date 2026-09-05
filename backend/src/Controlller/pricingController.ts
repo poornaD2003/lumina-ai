@@ -2,11 +2,122 @@
 import { Request, Response } from 'express';
 import { prisma } from '../lib/prisma';
 import { GoogleGenAI } from '@google/genai';
+import { fetchRealCompetitorPrices } from '../services/scraperService';
 
-// Gemini SDK Client Initialization
-const ai = new GoogleGenAI({
-    apiKey: process.env.GEMINI_API_KEY, // Ensure GEMINI_API_KEY is set in your .env
-});
+
+const geminiApiKey = 'AQ.Ab8RN6I3uSZkeWgYs4w8E38-qpATOQk0mYgQG0opRYSsq2B5TQ';
+const ai = geminiApiKey ? new GoogleGenAI({ apiKey: geminiApiKey }) : null;
+
+type AISuggestion = {
+    suggestedPrice: number;
+    recommendedMarginPercent: number;
+    reasoning: string;
+};
+
+export const getCompetitorAndAISuggestion = async (req: Request, res: Response) => {
+    
+  try {
+    console.log('Incoming Analyze Payload:', req.body); // Terminal එකේ payload එක බලන්න
+    const { productName, costPrice, currentPrice, brand, category } = req.body;
+
+        if (!productName || !Number.isFinite(Number(costPrice)) || !Number.isFinite(Number(currentPrice))) {
+            return res.status(400).json({ success: false, message: 'Product name, cost price, and current price are required' });
+        }
+
+        if (!productName || costPrice === undefined || currentPrice === undefined) {
+      return res.status(400).json({
+        success: false,
+        message: 'Product name, cost price, and current price are required.',
+      });
+    }
+
+    // Number conversions තහවුරු කරන්න
+    // Fetch live competitor data
+    const competitorData = await fetchRealCompetitorPrices(productName);
+
+    const competitorSummary = competitorData
+      .map((c) => `${c.storeName}: LKR ${c.price.toLocaleString()}`)
+      .join(', ');
+
+    const prompt = `
+      You are an expert Sri Lankan Tech Market Pricing Strategist for a computer store.
+      
+      Product Details:
+      - Item: ${productName} (${brand} - ${category})
+      - Our Cost Price: LKR ${costPrice}
+      - Current Selling Price: LKR ${currentPrice}
+      - Scraped Competitor Prices: ${competitorSummary}
+
+      Tasks:
+      1. Analyze competitor pricing and cost price.
+      2. Provide a competitive, profitable selling price for Sri Lankan market in LKR.
+      3. Give a concise 2-sentence rationale.
+
+      Respond STRICTLY in JSON:
+      {
+        "suggestedPrice": number,
+        "recommendedMarginPercent": number,
+        "reasoning": "string"
+      }
+    `;
+
+        let aiOutput: AISuggestion;
+        try {
+            if (!ai) throw new Error('GEMINI_API_KEY is not configured');
+            const response = await ai.models.generateContent({
+                model: 'gemini-3.5-flash',
+                contents: prompt,
+                config: { responseMimeType: 'application/json' },
+            });
+            aiOutput = JSON.parse(response.text || '{}') as AISuggestion;
+            if (!aiOutput.suggestedPrice) throw new Error('AI returned no suggested price');
+        } catch (error) {
+            if (geminiApiKey) {
+                console.warn('AI competitor analysis unavailable, using market benchmark:', error);
+            } else {
+                console.warn('GEMINI_API_KEY is not configured; using market benchmark.');
+            }
+            const averageMarketPrice = competitorData.length > 0
+                ? competitorData.reduce((total, competitor) => total + competitor.price, 0) / competitorData.length
+                : Number(costPrice) * 1.15;
+            const suggestedPrice = Math.round(Math.max(Number(costPrice) * 1.15, averageMarketPrice) / 500) * 500;
+            aiOutput = {
+                suggestedPrice,
+                recommendedMarginPercent: Math.round(((suggestedPrice - Number(costPrice)) / suggestedPrice) * 100),
+                reasoning: 'Gemini is temporarily unavailable. Price is based on the current competitor benchmark and a minimum 15% margin over cost.',
+            };
+        }
+
+    return res.status(200).json({
+      success: true,
+      competitors: competitorData,
+      aiSuggestion: aiOutput,
+    });
+  } catch (error: any) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export const getPricingProducts = async (_req: Request, res: Response) => {
+    try {
+        const products = await prisma.product.findMany({
+            select: {
+                id: true,
+                name: true,
+                brand: true,
+                category: true,
+                costPrice: true,
+                unitPrice: true,
+            },
+            orderBy: { name: 'asc' },
+        });
+
+        return res.json({ products });
+    } catch (error) {
+        console.error('Failed to load pricing products:', error);
+        return res.status(500).json({ error: 'Failed to load products' });
+    }
+};
 
 type PricingProduct = {
     id: number;
@@ -31,6 +142,7 @@ const createFallbackSuggestion = (product: PricingProduct) => {
 // backend/src/Controlller/pricingController.ts
 
 const generateAISuggestion = async (product: PricingProduct, marketCompetitorPrices: string[]) => {
+    if (!ai) throw new Error('GEMINI_API_KEY is not configured');
     const competitorInfo = marketCompetitorPrices.length > 0
         ? marketCompetitorPrices.join(', ')
         : 'Market Average is strictly based on current Sri Lankan tech store retail rates.';
@@ -61,7 +173,7 @@ const generateAISuggestion = async (product: PricingProduct, marketCompetitorPri
     `;
 
     const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
+        model: 'gemini-3.5-flash',
         contents: prompt,
         config: { responseMimeType: 'application/json' },
     });
@@ -153,11 +265,10 @@ export const suggestAllProductPrices = async (_req: Request, res: Response) => {
         const products = await prisma.product.findMany({ orderBy: { name: 'asc' } });
         const suggestions = [];
         for (const product of products) {
-            // suggestAllProductPrices function එක ඇතුළත:
-            const competitorPrices = [
-                `TechZone SL: LKR ${Math.round((product.costPrice * 1.14) / 1000) * 1000}`,
-                `MD Computers: LKR ${Math.round((product.costPrice * 1.18) / 1000) * 1000}`,
-            ];
+            const liveCompetitors = await fetchRealCompetitorPrices(product.name);
+            const competitorPrices = liveCompetitors.map(
+                (competitor) => `${competitor.storeName}: LKR ${competitor.price.toLocaleString()}`,
+            );
             let aiResult;
             try {
                 aiResult = await generateAISuggestion(product, competitorPrices);
