@@ -30,6 +30,7 @@ export default function SalesCalculatorPage() {
   const [products, setProducts] = useState<PricingProduct[]>([]);
   const [entries, setEntries] = useState<SaleEntry[]>([]);
   const [history, setHistory] = useState<DailyNetProfit[]>([]);
+  const [unsavedDates, setUnsavedDates] = useState<string[]>([]);
   const [date, setDate] = useState(today);
   const [productId, setProductId] = useState('');
   const [quantity, setQuantity] = useState('1');
@@ -80,6 +81,7 @@ export default function SalesCalculatorPage() {
   const dailyProfit = useMemo(() => {
     const merged = new Map(history.map((item) => [item.date, item]));
     sessionDailyProfit.forEach((item) => {
+      if (!unsavedDates.includes(item.date)) return;
       const existing = merged.get(item.date);
       merged.set(item.date, {
         date: item.date,
@@ -89,7 +91,7 @@ export default function SalesCalculatorPage() {
       });
     });
     return Array.from(merged.values()).sort((first, second) => first.date.localeCompare(second.date));
-  }, [history, sessionDailyProfit]);
+  }, [history, sessionDailyProfit, unsavedDates]);
 
   const totals = useMemo(
     () => entries.reduce(
@@ -116,26 +118,21 @@ export default function SalesCalculatorPage() {
     if (product) setSellingPrice(String(product.unitPrice));
   };
 
-  const persistDay = async (nextEntries: SaleEntry[], entryDate: string) => {
-    const dayTotals = nextEntries.reduce(
-      (summary, entry) => {
-        const product = products.find((item) => item.id === entry.productId);
-        if (!product || entry.date !== entryDate) return summary;
-        const revenue = entry.quantity * entry.sellingPrice;
-        const cost = entry.quantity * product.costPrice;
-        return { revenue: summary.revenue + revenue, costOfGoods: summary.costOfGoods + cost };
-      },
-      { revenue: 0, costOfGoods: 0 },
-    );
+  const persistDay = async (entryDate: string, revenueDelta: number, costDelta: number) => {
+    const existing = history.find((item) => item.date === entryDate);
+    const revenue = (existing?.revenue ?? 0) + revenueDelta;
+    const costOfGoods = (existing?.costOfGoods ?? 0) + costDelta;
     const saved = await saveDailyNetProfit({
       date: entryDate,
-      ...dayTotals,
-      netProfit: dayTotals.revenue - dayTotals.costOfGoods,
+      revenue,
+      costOfGoods,
+      netProfit: revenue - costOfGoods,
     });
     setHistory((currentHistory) => [
       ...currentHistory.filter((item) => item.date !== saved.date),
       saved,
     ].sort((first, second) => first.date.localeCompare(second.date)));
+    setUnsavedDates((dates) => dates.filter((savedDate) => savedDate !== saved.date));
   };
 
   const addEntry = async () => {
@@ -154,21 +151,32 @@ export default function SalesCalculatorPage() {
       },
     ];
     setEntries(nextEntries);
+    const revenue = parsedQuantity * parsedPrice;
+    const costOfGoods = parsedQuantity * selectedProduct.costPrice;
     try {
-      await persistDay(nextEntries, date);
+      await persistDay(date, revenue, costOfGoods);
       setError(null);
     } catch {
+      setUnsavedDates((dates) => dates.includes(date) ? dates : [...dates, date]);
       setError('Sale calculated locally, but the daily profit could not be saved.');
     }
     setQuantity('1');
   };
 
   const removeEntry = async (entryId: number, entryDate: string) => {
+    const removedEntry = entries.find((entry) => entry.id === entryId);
+    if (!removedEntry) return;
     const nextEntries = entries.filter((entry) => entry.id !== entryId);
     setEntries(nextEntries);
+    const product = products.find((item) => item.id === removedEntry.productId);
     try {
-      await persistDay(nextEntries, entryDate);
+      await persistDay(
+        entryDate,
+        -(removedEntry.quantity * removedEntry.sellingPrice),
+        -(removedEntry.quantity * (product?.costPrice ?? 0)),
+      );
     } catch {
+      setUnsavedDates((dates) => dates.includes(entryDate) ? dates : [...dates, entryDate]);
       setError('Sale removed locally, but the daily profit history could not be updated.');
     }
   };
