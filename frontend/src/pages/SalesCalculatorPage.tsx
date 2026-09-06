@@ -10,7 +10,7 @@ import {
 } from 'recharts';
 import { Plus, Trash2 } from 'lucide-react';
 import { fetchDailyNetProfit, fetchPricingProducts, saveDailyNetProfit } from '../api/client';
-import type { DailyNetProfit, DailyProductProfit, PricingProduct } from '../types';
+import type { DailyNetProfit, PricingProduct } from '../types';
 
 interface SaleEntry {
   id: number;
@@ -122,6 +122,7 @@ export default function SalesCalculatorPage() {
     entryDate: string,
     product: PricingProduct,
     quantityDelta: number,
+    salePrice: number,
     revenueDelta: number,
     costDelta: number,
   ) => {
@@ -130,12 +131,12 @@ export default function SalesCalculatorPage() {
       productId: product.id,
       productName: product.name,
       quantity: quantityDelta,
-      sellingPrice: product.unitPrice,
+      sellingPrice: salePrice,
       unitCost: product.costPrice,
       revenue: revenueDelta,
       costOfGoods: costDelta,
       netProfit: revenueDelta - costDelta,
-    } as DailyProductProfit);
+    });
     setHistory((currentHistory) => {
       const existing = currentHistory.find((item) => item.date === entryDate);
       const updated = {
@@ -171,7 +172,7 @@ export default function SalesCalculatorPage() {
     const revenue = parsedQuantity * parsedPrice;
     const costOfGoods = parsedQuantity * selectedProduct.costPrice;
     try {
-      await persistProductSale(date, selectedProduct, parsedQuantity, revenue, costOfGoods);
+      await persistProductSale(date, selectedProduct, parsedQuantity, parsedPrice, revenue, costOfGoods);
       setError(null);
     } catch {
       setUnsavedDates((dates) => dates.includes(date) ? dates : [...dates, date]);
@@ -192,6 +193,7 @@ export default function SalesCalculatorPage() {
         entryDate,
         product,
         -removedEntry.quantity,
+        removedEntry.sellingPrice,
         -(removedEntry.quantity * removedEntry.sellingPrice),
         -(removedEntry.quantity * (product?.costPrice ?? 0)),
       );
