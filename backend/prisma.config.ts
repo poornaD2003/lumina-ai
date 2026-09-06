@@ -8,13 +8,14 @@ const configDir = path.dirname(fileURLToPath(import.meta.url));
 // The shared .env lives at the workspace root, one level above backend/
 dotenv.config({ path: path.resolve(configDir, '../.env') });
 
-// DATABASE_URL is a relative SQLite path ("file:./dev.db"). Resolve it against
-// the prisma/ directory (next to schema.prisma) so the database location is
-// independent of the current working directory - same semantics as classic
-// Prisma, i.e. backend/prisma/dev.db.
+// DATABASE_URL can be:
+// - A relative SQLite path like "file:./dev.db" (resolved against prisma/)
+// - An absolute path like "file:/data/dev.db" (used as-is, for production volumes)
 const envUrl = process.env.DATABASE_URL ?? 'file:./dev.db';
 const sqlitePath = envUrl.replace(/^file:/, '');
-const datasourceUrl = `file:${path.resolve(configDir, 'prisma', sqlitePath)}`;
+const datasourceUrl = path.isAbsolute(sqlitePath)
+  ? `file:${sqlitePath}`
+  : `file:${path.resolve(configDir, 'prisma', sqlitePath)}`;
 
 export default defineConfig({
   schema: 'prisma/schema.prisma',
