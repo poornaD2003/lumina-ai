@@ -85,3 +85,11 @@ export interface ChatMessage {
   content: string;
   source?: 'ai' | 'fallback';
 }
+
+export interface DailyProductProfit extends DailyNetProfit {
+  productId: number;
+  productName: string;
+  quantity: number;
+  sellingPrice: number;
+  unitCost: number;
+}

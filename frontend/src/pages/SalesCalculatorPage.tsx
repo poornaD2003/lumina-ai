@@ -10,7 +10,7 @@ import {
 } from 'recharts';
 import { Plus, Trash2 } from 'lucide-react';
 import { fetchDailyNetProfit, fetchPricingProducts, saveDailyNetProfit } from '../api/client';
-import type { DailyNetProfit, PricingProduct } from '../types';
+import type { DailyNetProfit, DailyProductProfit, PricingProduct } from '../types';
 
 interface SaleEntry {
   id: number;
@@ -118,21 +118,38 @@ export default function SalesCalculatorPage() {
     if (product) setSellingPrice(String(product.unitPrice));
   };
 
-  const persistDay = async (entryDate: string, revenueDelta: number, costDelta: number) => {
-    const existing = history.find((item) => item.date === entryDate);
-    const revenue = (existing?.revenue ?? 0) + revenueDelta;
-    const costOfGoods = (existing?.costOfGoods ?? 0) + costDelta;
-    const saved = await saveDailyNetProfit({
+  const persistProductSale = async (
+    entryDate: string,
+    product: PricingProduct,
+    quantityDelta: number,
+    revenueDelta: number,
+    costDelta: number,
+  ) => {
+    await saveDailyNetProfit({
       date: entryDate,
-      revenue,
-      costOfGoods,
-      netProfit: revenue - costOfGoods,
+      productId: product.id,
+      productName: product.name,
+      quantity: quantityDelta,
+      sellingPrice: product.unitPrice,
+      unitCost: product.costPrice,
+      revenue: revenueDelta,
+      costOfGoods: costDelta,
+      netProfit: revenueDelta - costDelta,
+    } as DailyProductProfit);
+    setHistory((currentHistory) => {
+      const existing = currentHistory.find((item) => item.date === entryDate);
+      const updated = {
+        date: entryDate,
+        revenue: (existing?.revenue ?? 0) + revenueDelta,
+        costOfGoods: (existing?.costOfGoods ?? 0) + costDelta,
+        netProfit: (existing?.netProfit ?? 0) + revenueDelta - costDelta,
+      };
+      return [
+        ...currentHistory.filter((item) => item.date !== entryDate),
+        updated,
+      ].sort((first, second) => first.date.localeCompare(second.date));
     });
-    setHistory((currentHistory) => [
-      ...currentHistory.filter((item) => item.date !== saved.date),
-      saved,
-    ].sort((first, second) => first.date.localeCompare(second.date)));
-    setUnsavedDates((dates) => dates.filter((savedDate) => savedDate !== saved.date));
+    setUnsavedDates((dates) => dates.filter((savedDate) => savedDate !== entryDate));
   };
 
   const addEntry = async () => {
@@ -154,7 +171,7 @@ export default function SalesCalculatorPage() {
     const revenue = parsedQuantity * parsedPrice;
     const costOfGoods = parsedQuantity * selectedProduct.costPrice;
     try {
-      await persistDay(date, revenue, costOfGoods);
+      await persistProductSale(date, selectedProduct, parsedQuantity, revenue, costOfGoods);
       setError(null);
     } catch {
       setUnsavedDates((dates) => dates.includes(date) ? dates : [...dates, date]);
@@ -169,9 +186,12 @@ export default function SalesCalculatorPage() {
     const nextEntries = entries.filter((entry) => entry.id !== entryId);
     setEntries(nextEntries);
     const product = products.find((item) => item.id === removedEntry.productId);
+    if (!product) return;
     try {
-      await persistDay(
+      await persistProductSale(
         entryDate,
+        product,
+        -removedEntry.quantity,
         -(removedEntry.quantity * removedEntry.sellingPrice),
         -(removedEntry.quantity * (product?.costPrice ?? 0)),
       );

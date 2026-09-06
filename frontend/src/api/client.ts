@@ -11,6 +11,7 @@ import type {
   ChatMessage,
   PricingProduct,
   DailyNetProfit,
+  DailyProductProfit,
 } from '../types';
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL 
@@ -66,5 +67,5 @@ export const fetchPricingProducts = () =>
 export const fetchDailyNetProfit = () =>
   api.get<DailyNetProfit[]>('/dashboard/daily-net-profit').then((r) => r.data);
 
-export const saveDailyNetProfit = (record: DailyNetProfit) =>
-  api.post<DailyNetProfit>('/dashboard/daily-net-profit', record).then((r) => r.data);
+export const saveDailyNetProfit = (record: DailyProductProfit) =>
+  api.post<DailyProductProfit>('/dashboard/daily-net-profit', record).then((r) => r.data);

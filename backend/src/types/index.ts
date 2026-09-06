@@ -73,3 +73,11 @@ export interface DailyNetProfit {
   costOfGoods: number;
   netProfit: number;
 }
+
+export interface DailyProductProfit extends DailyNetProfit {
+  productId: number;
+  productName: string;
+  quantity: number;
+  sellingPrice: number;
+  unitCost: number;
+}

@@ -35,17 +35,18 @@ router.get('/daily-net-profit', async (_req, res, next) => {
 
 router.post('/daily-net-profit', async (req, res, next) => {
   try {
-    const { date, revenue, costOfGoods, netProfit } = req.body;
-    const values = [date, revenue, costOfGoods, netProfit];
+    const { date, productId, productName, quantity, sellingPrice, unitCost, revenue, costOfGoods, netProfit } = req.body;
+    const values = [productId, quantity, sellingPrice, unitCost, revenue, costOfGoods, netProfit];
     if (
       typeof date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(date) ||
+      !Number.isInteger(productId) || typeof productName !== 'string' || !productName.trim() ||
       values.slice(1).some((value) => typeof value !== 'number' || !Number.isFinite(value))
     ) {
-      res.status(400).json({ error: 'date, revenue, costOfGoods, and netProfit are required' });
+      res.status(400).json({ error: 'date, product, quantity, prices, and profit values are required' });
       return;
     }
 
-    res.json(await analytics.saveDailyNetProfit({ date, revenue, costOfGoods, netProfit }));
+    res.json(await analytics.saveDailyProductProfit({ date, productId, productName, quantity, sellingPrice, unitCost, revenue, costOfGoods, netProfit }));
   } catch (error) {
     next(error as Error);
   }

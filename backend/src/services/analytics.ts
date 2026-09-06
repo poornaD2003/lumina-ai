@@ -14,6 +14,7 @@ import { prisma } from './prisma.js';
 import type {
   CustomerSegment,
   DailyNetProfit,
+  DailyProductProfit,
   FinancialOverview,
   InventoryAlert,
   KPIData,
@@ -27,37 +28,62 @@ const round2 = (n: number): number => Math.round(n * 100) / 100;
 export async function getDailyNetProfitHistory(days = 365): Promise<DailyNetProfit[]> {
   const rows = await prisma.dailyNetProfit.findMany({
     orderBy: { date: 'asc' },
-    take: days,
     select: { date: true, revenue: true, costOfGoods: true, netProfit: true },
   });
-
-  return rows.map((row) => ({
-    date: row.date,
+  const totals = new Map<string, DailyNetProfit>();
+  rows.forEach((row) => {
+    const current = totals.get(row.date) ?? { date: row.date, revenue: 0, costOfGoods: 0, netProfit: 0 };
+    totals.set(row.date, {
+      date: row.date,
+      revenue: current.revenue + row.revenue,
+      costOfGoods: current.costOfGoods + row.costOfGoods,
+      netProfit: current.netProfit + row.netProfit,
+    });
+  });
+  return Array.from(totals.values()).slice(-days).map((row) => ({
+    ...row,
     revenue: round2(row.revenue),
     costOfGoods: round2(row.costOfGoods),
     netProfit: round2(row.netProfit),
   }));
 }
 
-export async function saveDailyNetProfit(input: DailyNetProfit): Promise<DailyNetProfit> {
+export async function saveDailyProductProfit(input: DailyProductProfit): Promise<DailyProductProfit> {
+  const existing = await prisma.dailyNetProfit.findUnique({
+    where: { date_productId: { date: input.date, productId: input.productId } },
+  });
   const saved = await prisma.dailyNetProfit.upsert({
-    where: { date: input.date },
+    where: { date_productId: { date: input.date, productId: input.productId } },
     create: {
       date: input.date,
+      productId: input.productId,
+      productName: input.productName,
+      quantity: input.quantity,
+      sellingPrice: input.sellingPrice,
+      unitCost: input.unitCost,
       revenue: input.revenue,
       costOfGoods: input.costOfGoods,
       netProfit: input.netProfit,
     },
     update: {
-      revenue: input.revenue,
-      costOfGoods: input.costOfGoods,
-      netProfit: input.netProfit,
+      productName: input.productName,
+      quantity: (existing?.quantity ?? 0) + input.quantity,
+      sellingPrice: input.sellingPrice,
+      unitCost: input.unitCost,
+      revenue: (existing?.revenue ?? 0) + input.revenue,
+      costOfGoods: (existing?.costOfGoods ?? 0) + input.costOfGoods,
+      netProfit: (existing?.netProfit ?? 0) + input.netProfit,
     },
-    select: { date: true, revenue: true, costOfGoods: true, netProfit: true },
+    select: { date: true, productId: true, productName: true, quantity: true, sellingPrice: true, unitCost: true, revenue: true, costOfGoods: true, netProfit: true },
   });
 
   return {
     date: saved.date,
+    productId: saved.productId as number,
+    productName: saved.productName ?? input.productName,
+    quantity: saved.quantity,
+    sellingPrice: round2(saved.sellingPrice),
+    unitCost: round2(saved.unitCost),
     revenue: round2(saved.revenue),
     costOfGoods: round2(saved.costOfGoods),
     netProfit: round2(saved.netProfit),
