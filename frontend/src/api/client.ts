@@ -9,6 +9,8 @@ import type {
   RegionSales,
   InventoryAlert,
   ChatMessage,
+  PricingProduct,
+  DailyNetProfit,
 } from '../types';
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL 
@@ -58,3 +60,11 @@ export const fetchChatHistory = () =>
 
 export const clearChatHistory = () =>
   api.delete<{ success: boolean }>('/agent/history').then((r) => r.data);
+export const fetchPricingProducts = () =>
+  api.get<{ products: PricingProduct[] }>('/pricing/products').then((r) => r.data.products);
+
+export const fetchDailyNetProfit = () =>
+  api.get<DailyNetProfit[]>('/dashboard/daily-net-profit').then((r) => r.data);
+
+export const saveDailyNetProfit = (record: DailyNetProfit) =>
+  api.post<DailyNetProfit>('/dashboard/daily-net-profit', record).then((r) => r.data);

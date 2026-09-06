@@ -7,6 +7,7 @@ import {
   fetchProductPerformance,
   fetchFinancialOverview,
   fetchSalesForecast,
+  fetchDailyNetProfit,
 } from '../api/client';
 import KPICard from '../components/dashboard/KPICard';
 import SalesChart from '../components/dashboard/SalesChart';
@@ -14,6 +15,7 @@ import ForecastChart from '../components/dashboard/ForecastChart';
 import CustomerChart from '../components/dashboard/CustomerChart';
 import ProductChart from '../components/dashboard/ProductChart';
 import FinancialChart from '../components/dashboard/FinancialChart';
+import DailyNetProfitChart from '../components/dashboard/DailyNetProfitChart';
 
 function fmtCurrency(value: number) {
   if (value >= 1_000_000) return `$${(value / 1_000_000).toFixed(1)}M`;
@@ -38,6 +40,7 @@ export default function DashboardPage() {
   const segments = useAnalytics('segments', fetchCustomerSegments);
   const products = useAnalytics('products', fetchProductPerformance);
   const financials = useAnalytics('financials', fetchFinancialOverview);
+  const dailyNetProfit = useAnalytics('daily-net-profit', fetchDailyNetProfit);
 
   return (
     <div className="flex flex-col gap-6">
@@ -120,6 +123,12 @@ export default function DashboardPage() {
         <Skeleton className="h-80" />
       ) : financials.data ? (
         <FinancialChart data={financials.data} />
+      ) : null}
+
+      {dailyNetProfit.isLoading ? (
+        <Skeleton className="h-80" />
+      ) : dailyNetProfit.data ? (
+        <DailyNetProfitChart data={dailyNetProfit.data} />
       ) : null}
     </div>
   );

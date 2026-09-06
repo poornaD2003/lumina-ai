@@ -1,11 +1,13 @@
 import { NavLink } from 'react-router-dom';
 import { LayoutDashboard, MessageSquare, Package } from 'lucide-react';
+import { Calculator } from 'lucide-react';
 
 const links = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/chat', label: 'Chat', icon: MessageSquare },
   { to: '/restock-plan', label: 'Restock Plan', icon: Package },
   { to: '/competitor-comparison', label: 'Price Comparison', icon: LayoutDashboard },
+  { to: '/sales-calculator', label: 'Sales Calculator', icon: Calculator },
 ];
 
 export default function Sidebar() {
