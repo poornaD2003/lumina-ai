@@ -13,6 +13,7 @@
 import { prisma } from './prisma.js';
 import type {
   CustomerSegment,
+  DailyNetProfit,
   FinancialOverview,
   InventoryAlert,
   KPIData,
@@ -22,6 +23,46 @@ import type {
 } from '../types/index.js';
 
 const round2 = (n: number): number => Math.round(n * 100) / 100;
+
+export async function getDailyNetProfitHistory(days = 365): Promise<DailyNetProfit[]> {
+  const rows = await prisma.dailyNetProfit.findMany({
+    orderBy: { date: 'asc' },
+    take: days,
+    select: { date: true, revenue: true, costOfGoods: true, netProfit: true },
+  });
+
+  return rows.map((row) => ({
+    date: row.date,
+    revenue: round2(row.revenue),
+    costOfGoods: round2(row.costOfGoods),
+    netProfit: round2(row.netProfit),
+  }));
+}
+
+export async function saveDailyNetProfit(input: DailyNetProfit): Promise<DailyNetProfit> {
+  const saved = await prisma.dailyNetProfit.upsert({
+    where: { date: input.date },
+    create: {
+      date: input.date,
+      revenue: input.revenue,
+      costOfGoods: input.costOfGoods,
+      netProfit: input.netProfit,
+    },
+    update: {
+      revenue: input.revenue,
+      costOfGoods: input.costOfGoods,
+      netProfit: input.netProfit,
+    },
+    select: { date: true, revenue: true, costOfGoods: true, netProfit: true },
+  });
+
+  return {
+    date: saved.date,
+    revenue: round2(saved.revenue),
+    costOfGoods: round2(saved.costOfGoods),
+    netProfit: round2(saved.netProfit),
+  };
+}
 
 /* -------------------------------------------------------------------------- */
 /*  KPIs                                                                       */

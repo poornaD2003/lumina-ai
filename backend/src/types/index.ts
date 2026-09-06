@@ -66,3 +66,10 @@ export interface InventoryAlert {
   stockQuantity: number;
   reorderLevel: number;
 }
+
+export interface DailyNetProfit {
+  date: string;
+  revenue: number;
+  costOfGoods: number;
+  netProfit: number;
+}

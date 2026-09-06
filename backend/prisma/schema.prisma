@@ -78,6 +78,16 @@ model FinancialRecord {
   description String?
 }
 
+model DailyNetProfit {
+  id            Int      @id @default(autoincrement())
+  date          String   @unique // ISO calendar date: YYYY-MM-DD
+  revenue       Float
+  costOfGoods   Float
+  netProfit     Float
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
 model ChatMessage {
   id          Int      @id @default(autoincrement())
   role        String   // user, assistant

@@ -25,6 +25,32 @@ router.get('/sales-summary', async (_req, res, next) => {
   }
 });
 
+router.get('/daily-net-profit', async (_req, res, next) => {
+  try {
+    res.json(await analytics.getDailyNetProfitHistory());
+  } catch (error) {
+    next(error as Error);
+  }
+});
+
+router.post('/daily-net-profit', async (req, res, next) => {
+  try {
+    const { date, revenue, costOfGoods, netProfit } = req.body;
+    const values = [date, revenue, costOfGoods, netProfit];
+    if (
+      typeof date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(date) ||
+      values.slice(1).some((value) => typeof value !== 'number' || !Number.isFinite(value))
+    ) {
+      res.status(400).json({ error: 'date, revenue, costOfGoods, and netProfit are required' });
+      return;
+    }
+
+    res.json(await analytics.saveDailyNetProfit({ date, revenue, costOfGoods, netProfit }));
+  } catch (error) {
+    next(error as Error);
+  }
+});
+
 router.get('/customer-segments', async (_req, res, next) => {
   try {
     res.json(await analytics.getCustomerSegments());
