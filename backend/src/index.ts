@@ -54,4 +54,7 @@ app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
 
+app.get('/', (req, res) => {
+  res.send('Lumina Backend API is running!');
+});
 export default app;
