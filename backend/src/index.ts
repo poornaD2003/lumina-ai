@@ -14,7 +14,10 @@ import agentRoutes from './routes/agent.js';
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-app.use(cors({ origin: 'http://localhost:5173' }));
+app.use(cors({
+  origin: process.env.NODE_ENV === 'production' ? true : 'http://localhost:5173',
+  credentials: true,
+}));
 app.use(express.json());
 
 // Health check
@@ -30,6 +33,13 @@ app.use('/api/agent', agentRoutes);
 
 // Error handler (must be last)
 app.use(errorHandler);
+
+// Serve frontend static files in production
+const frontendDist = path.resolve(__dirname, '../../frontend/dist');
+app.use(express.static(frontendDist));
+app.get('/{*splat}', (_req, res) => {
+  res.sendFile(path.join(frontendDist, 'index.html'));
+});
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
