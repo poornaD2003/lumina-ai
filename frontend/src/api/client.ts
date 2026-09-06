@@ -11,8 +11,13 @@ import type {
   ChatMessage,
 } from '../types';
 
-const api = axios.create({ baseURL: '/api' });
+const BASE_URL = import.meta.env.VITE_API_BASE_URL 
+  ? `${import.meta.env.VITE_API_BASE_URL}/api` 
+  : '/api';
 
+const api = axios.create({ 
+  baseURL: BASE_URL 
+});
 export const fetchKPIs = () =>
   api.get<KPIData>('/dashboard/kpis').then((r) => r.data);
 

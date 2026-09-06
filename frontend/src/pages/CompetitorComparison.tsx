@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { RefreshCw, ExternalLink, TrendingUp, AlertCircle } from 'lucide-react';
 
+
 interface Competitor {
   storeName: string;
   price: number;
