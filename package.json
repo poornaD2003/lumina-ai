@@ -4,6 +4,6 @@
   "private": true,
   "scripts": {
     "build": "cd frontend && npm install && npm run build",
-    "start": "cd backend && npm install && npx prisma migrate deploy && npx tsx src/index.ts"
+    "start": "cd backend && npm install && npx prisma migrate deploy && npm start"
   }
 }
