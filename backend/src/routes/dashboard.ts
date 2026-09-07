@@ -36,36 +36,23 @@ router.get('/daily-net-profit', async (_req, res, next) => {
 router.post('/daily-net-profit/batch', async (req, res, next) => {
   try {
     const records = req.body?.records;
-
     if (!Array.isArray(records) || records.length === 0) {
-      return res.status(400).json({
-        error: 'At least one sale record is required',
-      });
+      return res.status(400).json({ error: 'At least one sale record is required' });
     }
-
-    res.json(await analytics.saveDailyProductProfits(records));
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unable to finish sales';
-
-    if (message.startsWith('Insufficient stock')) {
-      return res.status(409).json({ error: message });
-    }
-
-    next(error);
-  }
-});
-
-router.post('/daily-net-profit/batch', async (req, res, next) => {
-  try {
-    const records = req.body?.records;
-    if (!Array.isArray(records) || records.length === 0) return res.status(400).json({ error: 'At least one sale record is required' });
     const valid = records.every((record) => {
       const values = [record.quantity, record.sellingPrice, record.unitCost, record.revenue, record.costOfGoods, record.netProfit];
-      return typeof record.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(record.date) && Number.isInteger(record.productId) && typeof record.productName === 'string' && record.productName.trim() && values.every((value) => typeof value === 'number' && Number.isFinite(value));
+      return typeof record.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(record.date) &&
+        Number.isInteger(record.productId) && typeof record.productName === 'string' && record.productName.trim() &&
+        Number.isInteger(record.quantity) && record.quantity > 0 &&
+        values.slice(1).every((value) => typeof value === 'number' && Number.isFinite(value) && value >= 0);
     });
     if (!valid) return res.status(400).json({ error: 'Invalid sale record' });
     res.json(await analytics.saveDailyProductProfits(records));
   } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unable to finish sales';
+    if (message.startsWith('Insufficient stock')) {
+      return res.status(409).json({ error: message });
+    }
     next(error as Error);
   }
 });

@@ -150,8 +150,8 @@ export default function SalesCalculatorPage() {
       setHistory(updatedHistory);
       setEntries([]);
       setError(null);
-    } catch {
-      setError('Sales are ready, but could not be stored. Please try Finish again.');
+    } catch (requestError: any) {
+      setError(requestError.response?.data?.error ?? 'Sales are ready, but could not be stored. Please try Finish again.');
     }
   };
 
