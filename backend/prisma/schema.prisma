@@ -54,6 +54,7 @@ model Product {
   supplier       Supplier? @relation(fields: [supplierId], references: [id])
   sales          Sale[]
   purchaseItems  PurchaseOrderItem[]
+  dailyNetProfits DailyNetProfit[]
 }
 
 model Sale {
@@ -92,6 +93,7 @@ model DailyNetProfit {
   netProfit     Float
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+  product       Product? @relation(fields: [productId], references: [id])
 
 }
 

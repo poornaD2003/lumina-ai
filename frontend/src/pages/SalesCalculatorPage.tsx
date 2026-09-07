@@ -8,8 +8,8 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import { Plus, Trash2 } from 'lucide-react';
-import { fetchDailyNetProfit, fetchPricingProducts, saveDailyNetProfitBatch } from '../api/client';
+import { Download, Plus, Trash2 } from 'lucide-react';
+import { downloadDailySalesPdf, fetchDailyNetProfit, fetchPricingProducts, saveDailyNetProfitBatch } from '../api/client';
 import type { DailyNetProfit, PricingProduct } from '../types';
 
 interface SaleEntry {
@@ -36,6 +36,8 @@ export default function SalesCalculatorPage() {
   const [sellingPrice, setSellingPrice] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [reportDate, setReportDate] = useState(today);
+  const [reportLoading, setReportLoading] = useState(false);
 
   useEffect(() => {
     Promise.all([fetchPricingProducts(), fetchDailyNetProfit()])
@@ -162,12 +164,28 @@ export default function SalesCalculatorPage() {
     setEntries(nextEntries);
   };
 
+  const downloadReport = async () => {
+    setReportLoading(true);
+    try {
+      await downloadDailySalesPdf(reportDate);
+    } catch {
+      setError('Unable to generate the daily sales PDF.');
+    } finally {
+      setReportLoading(false);
+    }
+  };
+
   return (
     <div className="flex flex-col gap-6">
       <div>
         <h1 className="text-xl font-semibold text-gray-900">Sales &amp; Profit Calculator</h1>
         <p className="mt-0.5 text-sm text-gray-500">Add daily sales manually and track net profit from your selling price.</p>
       </div>
+
+      <section className="flex flex-wrap items-end justify-between gap-4 rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
+        <div><h2 className="text-sm font-semibold text-gray-800">Daily sold-products report</h2><p className="mt-1 text-xs text-gray-500">Download every sold-price line for a selected date.</p></div>
+        <div className="flex items-end gap-2"><label className="text-xs font-medium text-gray-600">Report date<input value={reportDate} onChange={(event) => setReportDate(event.target.value)} type="date" className="mt-1 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-800" /></label><button type="button" onClick={downloadReport} disabled={reportLoading} className="inline-flex items-center gap-2 rounded-lg bg-slate-800 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700 disabled:opacity-50"><Download size={16} /> {reportLoading ? 'Generating...' : 'Download PDF'}</button></div>
+      </section>
 
       <section className="rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
         <div className="mb-4 flex items-center justify-between">

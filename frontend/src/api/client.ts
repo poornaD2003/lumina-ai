@@ -77,3 +77,16 @@ export const saveDailyNetProfitBatch = (records: DailyProductProfit[]) =>
 export const fetchProducts = () => api.get<Product[]>('/products').then((r) => r.data);
 export const createProduct = (product: Omit<Product, 'id'>) => api.post<Product>('/products', product).then((r) => r.data);
 export const updateProduct = (id: number, product: Omit<Product, 'id'>) => api.put<Product>(`/products/${id}`, product).then((r) => r.data);
+
+export const downloadDailySalesPdf = async (date: string) => {
+  const response = await api.get<Blob>('/daily-sales/pdf', {
+    params: { date },
+    responseType: 'blob',
+  });
+  const url = URL.createObjectURL(response.data);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `daily-sales-${date}.pdf`;
+  link.click();
+  URL.revokeObjectURL(url);
+};
