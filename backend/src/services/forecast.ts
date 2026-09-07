@@ -13,10 +13,10 @@ const round2 = (n: number): number => Math.round(n * 100) / 100;
 async function getMonthlyRevenue(): Promise<Array<{ period: string; revenue: number }>> {
   const rows = await prisma.$queryRaw<Array<{ period: string; revenue: number }>>`
     SELECT
-      strftime('%Y-%m', saleDate) AS period,
-      SUM(totalAmount) AS revenue
-    FROM Sale
-    GROUP BY period
+      TO_CHAR("saleDate", 'YYYY-MM') AS period,
+      SUM("totalAmount") AS revenue
+    FROM "Sale"
+    GROUP BY TO_CHAR("saleDate", 'YYYY-MM')
     ORDER BY period ASC`;
 
   return rows.map((row) => ({ period: row.period, revenue: Number(row.revenue) }));

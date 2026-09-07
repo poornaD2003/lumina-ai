@@ -117,16 +117,16 @@ export async function getKPIs(): Promise<KPIData> {
     prisma.customer.count({ where: { isActive: true } }),
     prisma.$queryRaw<Array<{ name: string }>>`
       SELECT p.name AS name
-      FROM Sale s
-      JOIN Product p ON p.id = s.productId
+      FROM "Sale" s
+      JOIN "Product" p ON p.id = s."productId"
       GROUP BY p.id, p.name
-      ORDER BY SUM(s.totalAmount) DESC
+      ORDER BY SUM(s."totalAmount") DESC
       LIMIT 1`,
     prisma.$queryRaw<Array<{ region: string }>>`
       SELECT region
-      FROM Sale
+      FROM "Sale"
       GROUP BY region
-      ORDER BY SUM(totalAmount) DESC
+      ORDER BY SUM("totalAmount") DESC
       LIMIT 1`,
   ]);
 
@@ -157,12 +157,12 @@ export async function getSalesSummary(months = 12): Promise<SalesSummary[]> {
     }>
   >`
     SELECT
-      strftime('%Y-%m', saleDate) AS period,
-      SUM(totalAmount) AS totalRevenue,
-      SUM(quantity) AS totalQuantity,
-      COUNT(*) AS orderCount
-    FROM Sale
-    GROUP BY period
+      TO_CHAR("saleDate", 'YYYY-MM') AS period,
+      SUM("totalAmount") AS "totalRevenue",
+      SUM(quantity) AS "totalQuantity",
+      COUNT(*) AS "orderCount"
+    FROM "Sale"
+    GROUP BY TO_CHAR("saleDate", 'YYYY-MM')
     ORDER BY period DESC
     LIMIT ${months}`;
 
@@ -203,18 +203,18 @@ export async function getCustomerSegments(): Promise<CustomerSegment[]> {
     SELECT
       c.segment AS segment,
       COUNT(*) AS count,
-      SUM(c.lifetimeValue) AS totalLTV,
-      AVG(c.lifetimeValue) AS avgLTV,
-      COALESCE(seg.totalRevenue, 0) AS totalRevenue
-    FROM Customer c
+      SUM(c."lifetimeValue") AS "totalLTV",
+      AVG(c."lifetimeValue") AS "avgLTV",
+      COALESCE(seg."totalRevenue", 0) AS "totalRevenue"
+    FROM "Customer" c
     LEFT JOIN (
-      SELECT cu.segment AS seg, SUM(s.totalAmount) AS totalRevenue
-      FROM Sale s
-      JOIN Customer cu ON cu.id = s.customerId
+      SELECT cu.segment AS seg, SUM(s."totalAmount") AS "totalRevenue"
+      FROM "Sale" s
+      JOIN "Customer" cu ON cu.id = s."customerId"
       GROUP BY cu.segment
     ) seg ON seg.seg = c.segment
     GROUP BY c.segment
-    ORDER BY totalRevenue DESC`;
+    ORDER BY "totalRevenue" DESC`;
 
   return rows.map((row) => ({
     segment: row.segment,
@@ -239,17 +239,17 @@ export async function getProductPerformance(limit = 10): Promise<ProductPerforma
     }>
   >`
     SELECT
-      p.name AS productName,
-      SUM(s.quantity) AS totalSold,
-      SUM(s.totalAmount) AS totalRevenue,
-      CASE WHEN p.unitPrice > 0
-        THEN ROUND(((p.unitPrice - p.costPrice) / p.unitPrice) * 100, 2)
+      p.name AS "productName",
+      SUM(s.quantity) AS "totalSold",
+      SUM(s."totalAmount") AS "totalRevenue",
+      CASE WHEN p."unitPrice" > 0
+        THEN ROUND((((p."unitPrice" - p."costPrice") / p."unitPrice") * 100)::numeric, 2)
         ELSE 0
       END AS margin
-    FROM Product p
-    JOIN Sale s ON s.productId = p.id
-    GROUP BY p.id, p.name, p.unitPrice, p.costPrice
-    ORDER BY totalRevenue DESC
+    FROM "Product" p
+    JOIN "Sale" s ON s."productId" = p.id
+    GROUP BY p.id, p.name, p."unitPrice", p."costPrice"
+    ORDER BY "totalRevenue" DESC
     LIMIT ${limit}`;
 
   return rows.map((row) => ({
@@ -274,12 +274,12 @@ export async function getFinancialOverview(months = 12): Promise<FinancialOvervi
     }>
   >`
     SELECT
-      strftime('%Y-%m', recordDate) AS period,
-      SUM(CASE WHEN recordType = 'Revenue' THEN amount ELSE 0 END) AS revenue,
-      SUM(CASE WHEN recordType = 'Expense' THEN amount ELSE 0 END) AS expenses,
-      SUM(CASE WHEN recordType = 'COGS' THEN amount ELSE 0 END) AS cogs
-    FROM FinancialRecord
-    GROUP BY period
+      TO_CHAR("recordDate", 'YYYY-MM') AS period,
+      SUM(CASE WHEN "recordType" = 'Revenue' THEN amount ELSE 0 END) AS revenue,
+      SUM(CASE WHEN "recordType" = 'Expense' THEN amount ELSE 0 END) AS expenses,
+      SUM(CASE WHEN "recordType" = 'COGS' THEN amount ELSE 0 END) AS cogs
+    FROM "FinancialRecord"
+    GROUP BY TO_CHAR("recordDate", 'YYYY-MM')
     ORDER BY period DESC
     LIMIT ${months}`;
 
@@ -312,9 +312,9 @@ export async function getSalesByRegion(): Promise<RegionSales[]> {
   >`
     SELECT
       region,
-      SUM(totalAmount) AS totalRevenue,
-      COUNT(*) AS orderCount
-    FROM Sale
+      SUM("totalAmount") AS "totalRevenue",
+      COUNT(*) AS "orderCount"
+    FROM "Sale"
     GROUP BY region
     ORDER BY totalRevenue DESC`;
 
