@@ -33,22 +33,25 @@ router.get('/daily-net-profit', async (_req, res, next) => {
   }
 });
 
-router.post('/daily-net-profit', async (req, res, next) => {
+router.post('/daily-net-profit/batch', async (req, res, next) => {
   try {
-    const { date, productId, productName, quantity, sellingPrice, unitCost, revenue, costOfGoods, netProfit } = req.body;
-    const values = [productId, quantity, sellingPrice, unitCost, revenue, costOfGoods, netProfit];
-    if (
-      typeof date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(date) ||
-      !Number.isInteger(productId) || typeof productName !== 'string' || !productName.trim() ||
-      values.slice(1).some((value) => typeof value !== 'number' || !Number.isFinite(value))
-    ) {
-      res.status(400).json({ error: 'date, product, quantity, prices, and profit values are required' });
-      return;
+    const records = req.body?.records;
+
+    if (!Array.isArray(records) || records.length === 0) {
+      return res.status(400).json({
+        error: 'At least one sale record is required',
+      });
     }
 
-    res.json(await analytics.saveDailyProductProfit({ date, productId, productName, quantity, sellingPrice, unitCost, revenue, costOfGoods, netProfit }));
+    res.json(await analytics.saveDailyProductProfits(records));
   } catch (error) {
-    next(error as Error);
+    const message = error instanceof Error ? error.message : 'Unable to finish sales';
+
+    if (message.startsWith('Insufficient stock')) {
+      return res.status(409).json({ error: message });
+    }
+
+    next(error);
   }
 });
 

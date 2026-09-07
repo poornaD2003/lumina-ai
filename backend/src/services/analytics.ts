@@ -47,38 +47,47 @@ export async function getDailyNetProfitHistory(days = 365): Promise<DailyNetProf
     netProfit: round2(row.netProfit),
   }));
 }
+export async function saveDailyProductProfits(
+  inputs: DailyProductProfit[],
+): Promise<DailyNetProfit[]> {
+  await prisma.$transaction(async (transaction) => {
+    for (const input of inputs) {
+      const stockUpdate = await transaction.product.updateMany({
+        where: {
+          id: input.productId,
+          stockQuantity: {
+            gte: input.quantity,
+          },
+        },
+        data: {
+          stockQuantity: {
+            decrement: input.quantity,
+          },
+        },
+      });
 
-export async function saveDailyProductProfit(input: DailyProductProfit): Promise<DailyProductProfit> {
-  const saved = await prisma.dailyNetProfit.create({
-    data: {
-      date: input.date,
-      productId: input.productId,
-      productName: input.productName,
-      quantity: input.quantity,
-      sellingPrice: input.sellingPrice,
-      unitCost: input.unitCost,
-      revenue: input.revenue,
-      costOfGoods: input.costOfGoods,
-      netProfit: input.netProfit,
-    },
-    select: { date: true, productId: true, productName: true, quantity: true, sellingPrice: true, unitCost: true, revenue: true, costOfGoods: true, netProfit: true },
+      if (stockUpdate.count !== 1) {
+        throw new Error(
+          `Insufficient stock for product ${input.productId}`,
+        );
+      }
+
+      await transaction.dailyNetProfit.create({
+        data: {
+          date: input.date,
+          productId: input.productId,
+          productName: input.productName,
+          quantity: input.quantity,
+          sellingPrice: input.sellingPrice,
+          unitCost: input.unitCost,
+          revenue: input.revenue,
+          costOfGoods: input.costOfGoods,
+          netProfit: input.netProfit,
+        },
+      });
+    }
   });
 
-  return {
-    date: saved.date,
-    productId: saved.productId as number,
-    productName: saved.productName ?? input.productName,
-    quantity: saved.quantity,
-    sellingPrice: round2(saved.sellingPrice),
-    unitCost: round2(saved.unitCost),
-    revenue: round2(saved.revenue),
-    costOfGoods: round2(saved.costOfGoods),
-    netProfit: round2(saved.netProfit),
-  };
-}
-
-export async function saveDailyProductProfits(inputs: DailyProductProfit[]): Promise<DailyNetProfit[]> {
-  await prisma.dailyNetProfit.createMany({ data: inputs });
   return getDailyNetProfitHistory();
 }
 
