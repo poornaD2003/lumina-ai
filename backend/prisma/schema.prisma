@@ -6,7 +6,8 @@ generator client {
 // passed as a driver adapter to PrismaClient (for the app). The datasource
 // block only declares the provider.
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
+  
 }
 
 model Customer {

@@ -90,6 +90,20 @@ export async function saveDailyProductProfit(input: DailyProductProfit): Promise
   };
 }
 
+export async function saveDailyProductProfits(inputs: DailyProductProfit[]): Promise<DailyNetProfit[]> {
+  await prisma.$transaction(async (transaction) => {
+    for (const input of inputs) {
+      const existing = await transaction.dailyNetProfit.findUnique({ where: { date_productId: { date: input.date, productId: input.productId } } });
+      await transaction.dailyNetProfit.upsert({
+        where: { date_productId: { date: input.date, productId: input.productId } },
+        create: { date: input.date, productId: input.productId, productName: input.productName, quantity: input.quantity, sellingPrice: input.sellingPrice, unitCost: input.unitCost, revenue: input.revenue, costOfGoods: input.costOfGoods, netProfit: input.netProfit },
+        update: { productName: input.productName, quantity: (existing?.quantity ?? 0) + input.quantity, sellingPrice: input.sellingPrice, unitCost: input.unitCost, revenue: (existing?.revenue ?? 0) + input.revenue, costOfGoods: (existing?.costOfGoods ?? 0) + input.costOfGoods, netProfit: (existing?.netProfit ?? 0) + input.netProfit },
+      });
+    }
+  });
+  return getDailyNetProfitHistory();
+}
+
 /* -------------------------------------------------------------------------- */
 /*  KPIs                                                                       */
 /* -------------------------------------------------------------------------- */

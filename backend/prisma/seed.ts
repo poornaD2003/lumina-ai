@@ -11,8 +11,7 @@
  *   node node_modules\prisma\build\index.js db seed
  */
 import { PrismaClient } from '@prisma/client';
-import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
-import dotenv from 'dotenv';
+import { PrismaPg } from '@prisma/adapter-pg';import dotenv from 'dotenv';
 import path from 'path';
 
 // Load .env from the project root (same convention as src/index.ts)
@@ -20,12 +19,13 @@ dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
 // DATABASE_URL is a relative SQLite path ("file:./dev.db") – resolve it against
 // this script's directory (prisma/), the same way the Prisma CLI resolves it.
-const envUrl = process.env.DATABASE_URL ?? 'file:./dev.db';
-const dbFile = envUrl.replace(/^file:/, '');
+const connectionString = process.env.DIRECT_URL ?? process.env.DATABASE_URL;
 
-const adapter = new PrismaBetterSqlite3({
-  url: `file:${path.resolve(__dirname, dbFile)}`,
-});
+if (!connectionString) {
+  throw new Error('DIRECT_URL or DATABASE_URL is not configured');
+}
+
+const adapter = new PrismaPg({ connectionString });
 const prisma = new PrismaClient({ adapter });
 
 /* ── Deterministic RNG (linear congruential generator) ───────────────────── */

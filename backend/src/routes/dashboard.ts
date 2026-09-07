@@ -52,6 +52,21 @@ router.post('/daily-net-profit', async (req, res, next) => {
   }
 });
 
+router.post('/daily-net-profit/batch', async (req, res, next) => {
+  try {
+    const records = req.body?.records;
+    if (!Array.isArray(records) || records.length === 0) return res.status(400).json({ error: 'At least one sale record is required' });
+    const valid = records.every((record) => {
+      const values = [record.quantity, record.sellingPrice, record.unitCost, record.revenue, record.costOfGoods, record.netProfit];
+      return typeof record.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(record.date) && Number.isInteger(record.productId) && typeof record.productName === 'string' && record.productName.trim() && values.every((value) => typeof value === 'number' && Number.isFinite(value));
+    });
+    if (!valid) return res.status(400).json({ error: 'Invalid sale record' });
+    res.json(await analytics.saveDailyProductProfits(records));
+  } catch (error) {
+    next(error as Error);
+  }
+});
+
 router.get('/customer-segments', async (_req, res, next) => {
   try {
     res.json(await analytics.getCustomerSegments());

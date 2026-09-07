@@ -10,6 +10,7 @@ import { errorHandler } from './middleware/error-handler.js';
 import dashboardRoutes from './routes/dashboard.js';
 import agentRoutes from './routes/agent.js';
 import pricingRoutes from './routes/pricingRoutes';
+import productRoutes from './routes/products.js';
 import { getRestockPlan } from './Controlller/stockController.js';
 import {
   generatePurchaseOrders,
@@ -50,6 +51,7 @@ app.use('/api/agent', agentRoutes);
 
 // Pricing Engine API
 app.use('/api/pricing', pricingRoutes);
+app.use('/api/products', productRoutes);
 
 // Restock plan + purchase order lifecycle
 app.get('/api/restock-plan', getRestockPlan);
