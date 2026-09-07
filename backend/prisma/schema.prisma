@@ -93,7 +93,6 @@ model DailyNetProfit {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  @@unique([date, productId])
 }
 
 model ChatMessage {

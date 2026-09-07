@@ -49,12 +49,8 @@ export async function getDailyNetProfitHistory(days = 365): Promise<DailyNetProf
 }
 
 export async function saveDailyProductProfit(input: DailyProductProfit): Promise<DailyProductProfit> {
-  const existing = await prisma.dailyNetProfit.findUnique({
-    where: { date_productId: { date: input.date, productId: input.productId } },
-  });
-  const saved = await prisma.dailyNetProfit.upsert({
-    where: { date_productId: { date: input.date, productId: input.productId } },
-    create: {
+  const saved = await prisma.dailyNetProfit.create({
+    data: {
       date: input.date,
       productId: input.productId,
       productName: input.productName,
@@ -64,15 +60,6 @@ export async function saveDailyProductProfit(input: DailyProductProfit): Promise
       revenue: input.revenue,
       costOfGoods: input.costOfGoods,
       netProfit: input.netProfit,
-    },
-    update: {
-      productName: input.productName,
-      quantity: (existing?.quantity ?? 0) + input.quantity,
-      sellingPrice: input.sellingPrice,
-      unitCost: input.unitCost,
-      revenue: (existing?.revenue ?? 0) + input.revenue,
-      costOfGoods: (existing?.costOfGoods ?? 0) + input.costOfGoods,
-      netProfit: (existing?.netProfit ?? 0) + input.netProfit,
     },
     select: { date: true, productId: true, productName: true, quantity: true, sellingPrice: true, unitCost: true, revenue: true, costOfGoods: true, netProfit: true },
   });
@@ -91,16 +78,7 @@ export async function saveDailyProductProfit(input: DailyProductProfit): Promise
 }
 
 export async function saveDailyProductProfits(inputs: DailyProductProfit[]): Promise<DailyNetProfit[]> {
-  await prisma.$transaction(async (transaction) => {
-    for (const input of inputs) {
-      const existing = await transaction.dailyNetProfit.findUnique({ where: { date_productId: { date: input.date, productId: input.productId } } });
-      await transaction.dailyNetProfit.upsert({
-        where: { date_productId: { date: input.date, productId: input.productId } },
-        create: { date: input.date, productId: input.productId, productName: input.productName, quantity: input.quantity, sellingPrice: input.sellingPrice, unitCost: input.unitCost, revenue: input.revenue, costOfGoods: input.costOfGoods, netProfit: input.netProfit },
-        update: { productName: input.productName, quantity: (existing?.quantity ?? 0) + input.quantity, sellingPrice: input.sellingPrice, unitCost: input.unitCost, revenue: (existing?.revenue ?? 0) + input.revenue, costOfGoods: (existing?.costOfGoods ?? 0) + input.costOfGoods, netProfit: (existing?.netProfit ?? 0) + input.netProfit },
-      });
-    }
-  });
+  await prisma.dailyNetProfit.createMany({ data: inputs });
   return getDailyNetProfitHistory();
 }
 
