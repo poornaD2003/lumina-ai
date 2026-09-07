@@ -7,6 +7,7 @@ import { RestockPlanPage } from './pages/RestockPlanPage';
 import { DynamicPricingPage } from './pages/DynamicPricingPage';
 import { CompetitorComparisonPage } from './pages/CompetitorComparison';
 import SalesCalculatorPage from './pages/SalesCalculatorPage';
+import ProductsPage from './pages/ProductsPage';
 const queryClient = new QueryClient();
 
 export default function App() {
@@ -21,6 +22,7 @@ export default function App() {
             <Route path="/dynamic-pricing" element={<DynamicPricingPage />} />
             <Route path="/competitor-comparison" element={<CompetitorComparisonPage />} />
             <Route path="/sales-calculator" element={<SalesCalculatorPage />} />
+            <Route path="/products" element={<ProductsPage />} />
           </Route>
         </Routes>
       </BrowserRouter>

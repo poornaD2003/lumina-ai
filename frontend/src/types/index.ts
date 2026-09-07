@@ -64,6 +64,17 @@ export interface PricingProduct {
   unitPrice: number;
 }
 
+export interface Product extends PricingProduct {
+  sku: string;
+  processor: string | null;
+  ram: string | null;
+  storage: string | null;
+  displaySize: string | null;
+  stockQuantity: number;
+  reorderLevel: number;
+  warrantyMonths: number;
+}
+
 export interface DailyNetProfit {
   date: string;
   revenue: number;

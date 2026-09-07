@@ -9,7 +9,7 @@ import {
   YAxis,
 } from 'recharts';
 import { Plus, Trash2 } from 'lucide-react';
-import { fetchDailyNetProfit, fetchPricingProducts, saveDailyNetProfit } from '../api/client';
+import { fetchDailyNetProfit, fetchPricingProducts, saveDailyNetProfitBatch } from '../api/client';
 import type { DailyNetProfit, PricingProduct } from '../types';
 
 interface SaleEntry {
@@ -30,7 +30,6 @@ export default function SalesCalculatorPage() {
   const [products, setProducts] = useState<PricingProduct[]>([]);
   const [entries, setEntries] = useState<SaleEntry[]>([]);
   const [history, setHistory] = useState<DailyNetProfit[]>([]);
-  const [unsavedDates, setUnsavedDates] = useState<string[]>([]);
   const [date, setDate] = useState(today);
   const [productId, setProductId] = useState('');
   const [quantity, setQuantity] = useState('1');
@@ -81,7 +80,6 @@ export default function SalesCalculatorPage() {
   const dailyProfit = useMemo(() => {
     const merged = new Map(history.map((item) => [item.date, item]));
     sessionDailyProfit.forEach((item) => {
-      if (!unsavedDates.includes(item.date)) return;
       const existing = merged.get(item.date);
       merged.set(item.date, {
         date: item.date,
@@ -91,7 +89,7 @@ export default function SalesCalculatorPage() {
       });
     });
     return Array.from(merged.values()).sort((first, second) => first.date.localeCompare(second.date));
-  }, [history, sessionDailyProfit, unsavedDates]);
+  }, [history, sessionDailyProfit]);
 
   const totals = useMemo(
     () => entries.reduce(
@@ -118,41 +116,6 @@ export default function SalesCalculatorPage() {
     if (product) setSellingPrice(String(product.unitPrice));
   };
 
-  const persistProductSale = async (
-    entryDate: string,
-    product: PricingProduct,
-    quantityDelta: number,
-    salePrice: number,
-    revenueDelta: number,
-    costDelta: number,
-  ) => {
-    await saveDailyNetProfit({
-      date: entryDate,
-      productId: product.id,
-      productName: product.name,
-      quantity: quantityDelta,
-      sellingPrice: salePrice,
-      unitCost: product.costPrice,
-      revenue: revenueDelta,
-      costOfGoods: costDelta,
-      netProfit: revenueDelta - costDelta,
-    });
-    setHistory((currentHistory) => {
-      const existing = currentHistory.find((item) => item.date === entryDate);
-      const updated = {
-        date: entryDate,
-        revenue: (existing?.revenue ?? 0) + revenueDelta,
-        costOfGoods: (existing?.costOfGoods ?? 0) + costDelta,
-        netProfit: (existing?.netProfit ?? 0) + revenueDelta - costDelta,
-      };
-      return [
-        ...currentHistory.filter((item) => item.date !== entryDate),
-        updated,
-      ].sort((first, second) => first.date.localeCompare(second.date));
-    });
-    setUnsavedDates((dates) => dates.filter((savedDate) => savedDate !== entryDate));
-  };
-
   const addEntry = async () => {
     const parsedQuantity = Number(quantity);
     const parsedPrice = Number(sellingPrice);
@@ -169,38 +132,34 @@ export default function SalesCalculatorPage() {
       },
     ];
     setEntries(nextEntries);
-    const revenue = parsedQuantity * parsedPrice;
-    const costOfGoods = parsedQuantity * selectedProduct.costPrice;
-    try {
-      await persistProductSale(date, selectedProduct, parsedQuantity, parsedPrice, revenue, costOfGoods);
-      setError(null);
-    } catch {
-      setUnsavedDates((dates) => dates.includes(date) ? dates : [...dates, date]);
-      setError('Sale calculated locally, but the daily profit could not be saved.');
-    }
+    setError(null);
     setQuantity('1');
   };
 
-  const removeEntry = async (entryId: number, entryDate: string) => {
+  const finishSales = async () => {
+    if (entries.length === 0) return;
+    const records = entries.flatMap((entry) => {
+      const product = products.find((item) => item.id === entry.productId);
+      if (!product) return [];
+      const revenue = entry.quantity * entry.sellingPrice;
+      const costOfGoods = entry.quantity * product.costPrice;
+      return [{ date: entry.date, productId: product.id, productName: product.name, quantity: entry.quantity, sellingPrice: entry.sellingPrice, unitCost: product.costPrice, revenue, costOfGoods, netProfit: revenue - costOfGoods }];
+    });
+    try {
+      const updatedHistory = await saveDailyNetProfitBatch(records);
+      setHistory(updatedHistory);
+      setEntries([]);
+      setError(null);
+    } catch {
+      setError('Sales are ready, but could not be stored. Please try Finish again.');
+    }
+  };
+
+  const removeEntry = (entryId: number) => {
     const removedEntry = entries.find((entry) => entry.id === entryId);
     if (!removedEntry) return;
     const nextEntries = entries.filter((entry) => entry.id !== entryId);
     setEntries(nextEntries);
-    const product = products.find((item) => item.id === removedEntry.productId);
-    if (!product) return;
-    try {
-      await persistProductSale(
-        entryDate,
-        product,
-        -removedEntry.quantity,
-        removedEntry.sellingPrice,
-        -(removedEntry.quantity * removedEntry.sellingPrice),
-        -(removedEntry.quantity * (product?.costPrice ?? 0)),
-      );
-    } catch {
-      setUnsavedDates((dates) => dates.includes(entryDate) ? dates : [...dates, entryDate]);
-      setError('Sale removed locally, but the daily profit history could not be updated.');
-    }
   };
 
   return (
@@ -241,9 +200,7 @@ export default function SalesCalculatorPage() {
         </div>
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
           <p className="text-xs text-gray-500">Product cost: {selectedProduct ? formatCurrency(selectedProduct.costPrice) : 'Select a product'}</p>
-          <button type="button" onClick={addEntry} disabled={loading || !selectedProduct} className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50">
-            <Plus size={16} /> Add sale
-          </button>
+          <div className="flex gap-2"><button type="button" onClick={addEntry} disabled={loading || !selectedProduct} className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"><Plus size={16} /> Add sale</button><button type="button" onClick={finishSales} disabled={loading || entries.length === 0} className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50">Finish sales</button></div>
         </div>
       </section>
 
@@ -288,7 +245,7 @@ export default function SalesCalculatorPage() {
               const profit = entry.quantity * (entry.sellingPrice - (product?.costPrice ?? 0));
               return <div key={entry.id} className="flex items-center justify-between gap-3 border-b border-gray-50 p-4 last:border-0">
                 <div className="min-w-0"><p className="truncate text-sm font-medium text-gray-800">{product?.name}</p><p className="text-xs text-gray-500">{entry.date} · {entry.quantity} × {formatCurrency(entry.sellingPrice)}</p></div>
-                <div className="flex items-center gap-3"><span className={`text-sm font-semibold ${profit >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>{formatCurrency(profit)}</span><button type="button" aria-label={`Remove ${product?.name}`} onClick={() => removeEntry(entry.id, entry.date)} className="text-gray-400 hover:text-red-500"><Trash2 size={16} /></button></div>
+                <div className="flex items-center gap-3"><span className={`text-sm font-semibold ${profit >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>{formatCurrency(profit)}</span><button type="button" aria-label={`Remove ${product?.name}`} onClick={() => removeEntry(entry.id)} className="text-gray-400 hover:text-red-500"><Trash2 size={16} /></button></div>
               </div>;
             })}
           </div>

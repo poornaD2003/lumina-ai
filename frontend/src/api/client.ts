@@ -12,6 +12,7 @@ import type {
   PricingProduct,
   DailyNetProfit,
   DailyProductProfit,
+  Product,
 } from '../types';
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL 
@@ -69,3 +70,10 @@ export const fetchDailyNetProfit = () =>
 
 export const saveDailyNetProfit = (record: DailyProductProfit) =>
   api.post<DailyProductProfit>('/dashboard/daily-net-profit', record).then((r) => r.data);
+
+export const saveDailyNetProfitBatch = (records: DailyProductProfit[]) =>
+  api.post<DailyNetProfit[]>('/dashboard/daily-net-profit/batch', { records }).then((r) => r.data);
+
+export const fetchProducts = () => api.get<Product[]>('/products').then((r) => r.data);
+export const createProduct = (product: Omit<Product, 'id'>) => api.post<Product>('/products', product).then((r) => r.data);
+export const updateProduct = (id: number, product: Omit<Product, 'id'>) => api.put<Product>(`/products/${id}`, product).then((r) => r.data);
