@@ -30,6 +30,7 @@ model Supplier {
   phone        String?
   leadTimeDays Int       @default(7)
   products     Product[]
+  invoices     SupplierInvoice[]
 }
 
 model Product {
@@ -55,6 +56,7 @@ model Product {
   sales          Sale[]
   purchaseItems  PurchaseOrderItem[]
   dailyNetProfits DailyNetProfit[]
+  invoiceItems SupplierInvoiceItem[]
 }
 
 model Sale {
@@ -129,4 +131,32 @@ model PurchaseOrderItem {
   productName     String         // snapshot of the name at order time
   quantity        Int
   unitCost        Float
+}
+
+model SupplierInvoice {
+  id            Int                   @id @default(autoincrement())
+  supplierId    Int?
+  invoiceNumber String?
+  invoiceDate   DateTime?
+  fileName      String
+  fileType      String
+  invoiceTotal  Float?
+  status        String                @default("REVIEW")
+  ocrConfidence Float?
+  createdAt     DateTime              @default(now())
+  supplier      Supplier?             @relation(fields: [supplierId], references: [id])
+  items         SupplierInvoiceItem[]
+}
+
+model SupplierInvoiceItem {
+  id          Int              @id @default(autoincrement())
+  invoiceId   Int
+  productId   Int?
+  productName String
+  quantity    Int
+  unitPrice   Float
+  totalAmount Float
+  confidence  Float?
+  invoice     SupplierInvoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  product     Product?        @relation(fields: [productId], references: [id])
 }

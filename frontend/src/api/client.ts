@@ -78,6 +78,43 @@ export const fetchProducts = () => api.get<Product[]>('/products').then((r) => r
 export const createProduct = (product: Omit<Product, 'id'>) => api.post<Product>('/products', product).then((r) => r.data);
 export const updateProduct = (id: number, product: Omit<Product, 'id'>) => api.put<Product>(`/products/${id}`, product).then((r) => r.data);
 
+export interface InvoiceItem {
+  id: number;
+  productId: number | null;
+  productName: string;
+  quantity: number;
+  unitPrice: number;
+  totalAmount: number;
+  confidence: number | null;
+  product?: { id: number; name: string; sku: string } | null;
+}
+
+export interface SupplierInvoice {
+  id: number;
+  supplierId: number | null;
+  invoiceNumber: string | null;
+  invoiceDate: string | null;
+  fileName: string;
+  status: string;
+  invoiceTotal: number | null;
+  ocrConfidence: number | null;
+  supplier?: { id: number; name: string } | null;
+  items: InvoiceItem[];
+}
+
+export interface InvoiceOptions {
+  suppliers: Array<{ id: number; name: string }>;
+  products: Array<{ id: number; name: string; sku: string }>;
+}
+
+export const uploadSupplierInvoice = (payload: { fileName: string; fileType: string; data: string }) =>
+  api.post<SupplierInvoice>('/invoices/upload', payload).then((r) => r.data);
+
+export const fetchInvoiceOptions = () => api.get<InvoiceOptions>('/invoices/options').then((r) => r.data);
+
+export const approveSupplierInvoice = (id: number, payload: { supplierId: number; items: Array<Pick<InvoiceItem, 'id' | 'productId' | 'quantity' | 'unitPrice' | 'totalAmount'> & { productId: number }> }) =>
+  api.post(`/invoices/${id}/approve`, payload).then((r) => r.data);
+
 export const downloadDailySalesPdf = async (date: string) => {
   const response = await api.get<Blob>('/daily-sales/pdf', {
     params: { date },

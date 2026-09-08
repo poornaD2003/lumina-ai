@@ -19,6 +19,7 @@ import {
   receivePurchaseOrder,
   cancelPurchaseOrder,
 } from './Controlller/purchaseOrderController.js';
+import { approveInvoice, getInvoice, getInvoiceOptions, uploadInvoice } from './Controlller/invoiceController.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -29,7 +30,7 @@ app.use(cors({
   credentials: true
 }));
 
-app.use(express.json());
+app.use(express.json({ limit: '18mb' }));
 
 // Root health check route (FIXED: Placed before error handler & routes)
 app.get('/', (_req, res) => {
@@ -61,6 +62,12 @@ app.get('/api/restock-plan/orders', listPurchaseOrders);
 app.post('/api/restock-plan/generate-po', generatePurchaseOrders);
 app.post('/api/restock-plan/orders/:id/receive', receivePurchaseOrder);
 app.post('/api/restock-plan/orders/:id/cancel', cancelPurchaseOrder);
+
+// Supplier invoice extraction and human approval workflow
+app.post('/api/invoices/upload', uploadInvoice);
+app.get('/api/invoices/options', getInvoiceOptions);
+app.get('/api/invoices/:id', getInvoice);
+app.post('/api/invoices/:id/approve', approveInvoice);
 
 // Error handler (MUST be the last middleware)
 app.use(errorHandler);

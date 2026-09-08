@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, MessageSquare, Package, Boxes } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, Package, Boxes, FileUp } from 'lucide-react';
 import { Calculator } from 'lucide-react';
 
 const links = [
@@ -9,6 +9,7 @@ const links = [
   { to: '/competitor-comparison', label: 'Price Comparison', icon: LayoutDashboard },
   { to: '/sales-calculator', label: 'Sales Calculator', icon: Calculator },
   { to: '/products', label: 'Products', icon: Boxes },
+  { to: '/invoices/upload', label: 'Upload Invoice', icon: FileUp },
 ];
 
 export default function Sidebar() {
