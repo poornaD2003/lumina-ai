@@ -140,12 +140,12 @@ export async function getSalesSummary(months = 12): Promise<SalesSummary[]> {
     }>
   >`
     SELECT
-      TO_CHAR("saleDate", 'YYYY-MM') AS period,
-      SUM("totalAmount")::float AS "totalRevenue",
-      SUM(quantity)::int AS "totalQuantity",
+      SUBSTRING("date" FROM 1 FOR 7) AS period,
+      SUM("revenue")::float AS "totalRevenue",
+      SUM("quantity")::int AS "totalQuantity",
       COUNT(*)::int AS "orderCount"
-    FROM "Sale"
-    GROUP BY TO_CHAR("saleDate", 'YYYY-MM')
+    FROM "DailyNetProfit"
+    GROUP BY SUBSTRING("date" FROM 1 FOR 7)
     ORDER BY period DESC
     LIMIT ${limitMonths}`;
 
@@ -221,13 +221,13 @@ export async function getProductPerformance(limit = 10): Promise<ProductPerforma
     SELECT
       p.name AS "productName",
       SUM(s.quantity)::int AS "totalSold",
-      SUM(s."totalAmount")::float AS "totalRevenue",
+      SUM(s."revenue")::float AS "totalRevenue",
       CASE WHEN p."unitPrice" > 0
         THEN ROUND((((p."unitPrice" - p."costPrice") / p."unitPrice") * 100)::numeric, 2)::float
         ELSE 0
       END AS margin
     FROM "Product" p
-    JOIN "Sale" s ON s."productId" = p.id
+    JOIN "DailyNetProfit" s ON s."productId" = p.id
     GROUP BY p.id, p.name, p."unitPrice", p."costPrice"
     ORDER BY "totalRevenue" DESC
     LIMIT ${limitNum}`;
