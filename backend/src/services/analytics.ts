@@ -1,14 +1,8 @@
 /**
  * Analytics service - aggregated business metrics for the BI dashboard.
  *
- * All queries run through the shared Prisma client singleton
- * (src/services/prisma.ts). Date-based grouping uses SQLite's strftime() on
- * the ISO-8601 text that Prisma stores for DateTime columns, so month
- * buckets are computed by the database itself.
- *
- * NOTE: the better-sqlite3 driver returns integer aggregates (COUNT, SUM of
- * integer columns) as BigInt. Every raw-query result is normalized with
- * Number() so JSON responses contain plain numbers.
+ * All queries run through the shared Prisma client singleton (src/services/prisma.ts).
+ * Fully refactored and optimized for PostgreSQL (Supabase).
  */
 import { prisma } from './prisma.js';
 import type {
@@ -16,7 +10,6 @@ import type {
   DailyNetProfit,
   DailyProductProfit,
   FinancialOverview,
-  InventoryAlert,
   KPIData,
   ProductPerformance,
   RegionSales,
@@ -47,6 +40,7 @@ export async function getDailyNetProfitHistory(days = 365): Promise<DailyNetProf
     netProfit: round2(row.netProfit),
   }));
 }
+
 export async function saveDailyProductProfits(
   inputs: DailyProductProfit[],
 ): Promise<DailyNetProfit[]> {
@@ -92,7 +86,7 @@ export async function saveDailyProductProfits(
 }
 
 /* -------------------------------------------------------------------------- */
-/*  KPIs                                                                       */
+/*  KPIs                                                                      */
 /* -------------------------------------------------------------------------- */
 
 export async function getKPIs(): Promise<KPIData> {
@@ -131,57 +125,54 @@ export async function getKPIs(): Promise<KPIData> {
 }
 
 /* -------------------------------------------------------------------------- */
-/*  Monthly sales summary                                                      */
+/*  Monthly sales summary                                                     */
 /* -------------------------------------------------------------------------- */
 
 export async function getSalesSummary(months = 12): Promise<SalesSummary[]> {
+  const limitMonths = Number(months) || 12;
+
   const rows = await prisma.$queryRaw<
     Array<{
       period: string;
       totalRevenue: number;
-      totalQuantity: number | bigint;
-      orderCount: number | bigint;
+      totalQuantity: number;
+      orderCount: number;
     }>
   >`
     SELECT
       TO_CHAR("saleDate", 'YYYY-MM') AS period,
-      SUM("totalAmount") AS "totalRevenue",
-      SUM(quantity) AS "totalQuantity",
-      COUNT(*) AS "orderCount"
+      SUM("totalAmount")::float AS "totalRevenue",
+      SUM(quantity)::int AS "totalQuantity",
+      COUNT(*)::int AS "orderCount"
     FROM "Sale"
     GROUP BY TO_CHAR("saleDate", 'YYYY-MM')
     ORDER BY period DESC
-    LIMIT ${months}`;
+    LIMIT ${limitMonths}`;
 
-  // Query pulls newest-first for LIMIT; reverse into chronological order.
   return rows
     .map((row) => ({
       period: row.period,
-      totalRevenue: round2(Number(row.totalRevenue)),
-      totalQuantity: Number(row.totalQuantity),
-      orderCount: Number(row.orderCount),
+      totalRevenue: round2(Number(row.totalRevenue ?? 0)),
+      totalQuantity: Number(row.totalQuantity ?? 0),
+      orderCount: Number(row.orderCount ?? 0),
     }))
     .reverse()
     .map((row) => ({
-      period: row.period,
-      totalRevenue: row.totalRevenue,
-      totalQuantity: row.totalQuantity,
-      orderCount: row.orderCount,
+      ...row,
       avgOrderValue: row.orderCount > 0 ? round2(row.totalRevenue / row.orderCount) : 0,
     }));
 }
 
 /* -------------------------------------------------------------------------- */
-/*  Customer segments                                                          */
+/*  Customer segments                                                         */
 /* -------------------------------------------------------------------------- */
 
 export async function getCustomerSegments(): Promise<CustomerSegment[]> {
-  // LTV is aggregated per Customer row; sales revenue comes from a subquery
-  // so it does not multiply lifetimeValue across a customer's sales.
+  // FIXED SQL 42803: Added seg."totalRevenue" to GROUP BY clause
   const rows = await prisma.$queryRaw<
     Array<{
       segment: string;
-      count: number | bigint;
+      count: number;
       totalLTV: number;
       avgLTV: number;
       totalRevenue: number;
@@ -189,10 +180,10 @@ export async function getCustomerSegments(): Promise<CustomerSegment[]> {
   >`
     SELECT
       c.segment AS segment,
-      COUNT(*) AS count,
-      SUM(c."lifetimeValue") AS "totalLTV",
-      AVG(c."lifetimeValue") AS "avgLTV",
-      COALESCE(seg."totalRevenue", 0) AS "totalRevenue"
+      COUNT(*)::int AS count,
+      SUM(c."lifetimeValue")::float AS "totalLTV",
+      AVG(c."lifetimeValue")::float AS "avgLTV",
+      COALESCE(seg."totalRevenue", 0)::float AS "totalRevenue"
     FROM "Customer" c
     LEFT JOIN (
       SELECT cu.segment AS seg, SUM(s."totalAmount") AS "totalRevenue"
@@ -200,58 +191,62 @@ export async function getCustomerSegments(): Promise<CustomerSegment[]> {
       JOIN "Customer" cu ON cu.id = s."customerId"
       GROUP BY cu.segment
     ) seg ON seg.seg = c.segment
-    GROUP BY c.segment
+    GROUP BY c.segment, seg."totalRevenue"
     ORDER BY "totalRevenue" DESC`;
 
   return rows.map((row) => ({
     segment: row.segment,
-    count: Number(row.count),
-    totalLTV: round2(Number(row.totalLTV)),
-    avgLTV: round2(Number(row.avgLTV)),
-    totalRevenue: round2(Number(row.totalRevenue)),
+    count: Number(row.count ?? 0),
+    totalLTV: round2(Number(row.totalLTV ?? 0)),
+    avgLTV: round2(Number(row.avgLTV ?? 0)),
+    totalRevenue: round2(Number(row.totalRevenue ?? 0)),
   }));
 }
 
 /* -------------------------------------------------------------------------- */
-/*  Product performance                                                        */
+/*  Product performance                                                       */
 /* -------------------------------------------------------------------------- */
 
 export async function getProductPerformance(limit = 10): Promise<ProductPerformance[]> {
+  const limitNum = Number(limit) || 10;
+
   const rows = await prisma.$queryRaw<
     Array<{
       productName: string;
-      totalSold: number | bigint;
+      totalSold: number;
       totalRevenue: number;
       margin: number;
     }>
   >`
     SELECT
       p.name AS "productName",
-      SUM(s.quantity) AS "totalSold",
-      SUM(s."totalAmount") AS "totalRevenue",
+      SUM(s.quantity)::int AS "totalSold",
+      SUM(s."totalAmount")::float AS "totalRevenue",
       CASE WHEN p."unitPrice" > 0
-        THEN ROUND((((p."unitPrice" - p."costPrice") / p."unitPrice") * 100)::numeric, 2)
+        THEN ROUND((((p."unitPrice" - p."costPrice") / p."unitPrice") * 100)::numeric, 2)::float
         ELSE 0
       END AS margin
     FROM "Product" p
     JOIN "Sale" s ON s."productId" = p.id
     GROUP BY p.id, p.name, p."unitPrice", p."costPrice"
     ORDER BY "totalRevenue" DESC
-    LIMIT ${limit}`;
+    LIMIT ${limitNum}`;
 
   return rows.map((row) => ({
     productName: row.productName,
-    totalSold: Number(row.totalSold),
-    totalRevenue: round2(Number(row.totalRevenue)),
-    margin: Number(row.margin),
+    totalSold: Number(row.totalSold ?? 0),
+    totalRevenue: round2(Number(row.totalRevenue ?? 0)),
+    margin: Number(row.margin ?? 0),
   }));
 }
 
 /* -------------------------------------------------------------------------- */
-/*  Financial overview (monthly P&L)                                           */
+/*  Financial overview (monthly P&L)                                          */
 /* -------------------------------------------------------------------------- */
 
 export async function getFinancialOverview(months = 12): Promise<FinancialOverview[]> {
+  const limitMonths = Number(months) || 12;
+
   const rows = await prisma.$queryRaw<
     Array<{
       period: string;
@@ -262,21 +257,20 @@ export async function getFinancialOverview(months = 12): Promise<FinancialOvervi
   >`
     SELECT
       TO_CHAR("recordDate", 'YYYY-MM') AS period,
-      SUM(CASE WHEN "recordType" = 'Revenue' THEN amount ELSE 0 END) AS revenue,
-      SUM(CASE WHEN "recordType" = 'Expense' THEN amount ELSE 0 END) AS expenses,
-      SUM(CASE WHEN "recordType" = 'COGS' THEN amount ELSE 0 END) AS cogs
+      SUM(CASE WHEN "recordType" = 'Revenue' THEN amount ELSE 0 END)::float AS revenue,
+      SUM(CASE WHEN "recordType" = 'Expense' THEN amount ELSE 0 END)::float AS expenses,
+      SUM(CASE WHEN "recordType" = 'COGS' THEN amount ELSE 0 END)::float AS cogs
     FROM "FinancialRecord"
     GROUP BY TO_CHAR("recordDate", 'YYYY-MM')
     ORDER BY period DESC
-    LIMIT ${months}`;
+    LIMIT ${limitMonths}`;
 
-  // Newest-first for LIMIT; reverse into chronological order.
   return rows
     .map((row) => ({
       period: row.period,
-      revenue: round2(Number(row.revenue)),
-      expenses: round2(Number(row.expenses)),
-      cogs: round2(Number(row.cogs)),
+      revenue: round2(Number(row.revenue ?? 0)),
+      expenses: round2(Number(row.expenses ?? 0)),
+      cogs: round2(Number(row.cogs ?? 0)),
     }))
     .reverse()
     .map((row) => ({
@@ -286,7 +280,7 @@ export async function getFinancialOverview(months = 12): Promise<FinancialOvervi
 }
 
 /* -------------------------------------------------------------------------- */
-/*  Sales by region                                                            */
+/*  Sales by region                                                           */
 /* -------------------------------------------------------------------------- */
 
 export async function getSalesByRegion(): Promise<RegionSales[]> {
@@ -294,32 +288,35 @@ export async function getSalesByRegion(): Promise<RegionSales[]> {
     Array<{
       region: string;
       totalRevenue: number;
-      orderCount: number | bigint;
+      orderCount: number;
     }>
   >`
     SELECT
       region,
-      SUM("totalAmount") AS "totalRevenue",
-      COUNT(*) AS "orderCount"
+      SUM("totalAmount")::float AS "totalRevenue",
+      COUNT(*)::int AS "orderCount"
     FROM "Sale"
     GROUP BY region
-    ORDER BY totalRevenue DESC`;
+    ORDER BY "totalRevenue" DESC`;
 
   return rows.map((row) => ({
     region: row.region,
-    totalRevenue: round2(Number(row.totalRevenue)),
-    orderCount: Number(row.orderCount),
+    totalRevenue: round2(Number(row.totalRevenue ?? 0)),
+    orderCount: Number(row.orderCount ?? 0),
   }));
 }
 
 /* -------------------------------------------------------------------------- */
-/*  Inventory alerts                                                           */
+/*  Inventory alerts                                                          */
 /* -------------------------------------------------------------------------- */
 
-export async function getInventoryAlerts(): Promise<InventoryAlert[]> {
-  // Column-to-column comparison: stockQuantity <= reorderLevel
+export async function getInventoryAlerts() {
   const products = await prisma.product.findMany({
-    where: { stockQuantity: { lte: prisma.product.fields.reorderLevel } },
+    where: {
+      stockQuantity: {
+        lte: prisma.product.fields.reorderLevel,
+      },
+    },
     orderBy: { stockQuantity: 'asc' },
     select: {
       name: true,
