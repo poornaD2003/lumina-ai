@@ -46,17 +46,15 @@ export default function ForecastChart({ data }: Props) {
             tickLine={false}
           />
           <YAxis
-            tickFormatter={formatValue}
+          tickFormatter={(value) => `LKR ${(value / 100000).toFixed(1)}L`}
             tick={{ fontSize: 11, fill: '#94a3b8' }}
             axisLine={false}
             tickLine={false}
             width={54}
           />
           <Tooltip
-            formatter={(value, name) => [
-              formatValue(Number(value)),
-              name === 'actual' ? 'Actual' : 'Predicted',
-            ]}
+            formatter={(value: number) => [`LKR ${value.toLocaleString()}`, 'Revenue']}
+           
             contentStyle={{
               borderRadius: 8,
               border: '1px solid #e2e8f0',

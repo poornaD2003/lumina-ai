@@ -4,27 +4,36 @@
  * This method captures both the level and the trend of the historical monthly
  * revenue series to project it `monthsAhead` months into the future.
  */
-import { prisma } from '../lib/prisma';
+import { prisma } from './prisma.js';
 import type { ForecastPoint } from '../types/index.js';
 
 const round2 = (n: number): number => Math.round(n * 100) / 100;
 
 /** Monthly revenue for every month that has sales, oldest first. */
 async function getMonthlyRevenue(): Promise<Array<{ period: string; revenue: number }>> {
-  // `date` field එක String නිසා SUBSTRING("date", 1, 7) මගින් "YYYY-MM" කොටස වෙන් කරගනියි.
+  // Direct fallback computation: if revenue column is null, fallback to (sellingPrice * quantity)
   const rows = await prisma.$queryRaw<Array<{ period: string; revenue: number }>>`
     SELECT
-      SUBSTRING("date", 1, 7) AS period,
-      SUM("revenue") AS revenue
+      SUBSTRING("date" FROM 1 FOR 7) AS period,
+      SUM(
+        CASE 
+          WHEN "revenue" IS NOT NULL AND "revenue" > 0 THEN "revenue"
+          ELSE ("sellingPrice" * "quantity")
+        END
+      )::float AS revenue
     FROM "DailyNetProfit"
-    GROUP BY SUBSTRING("date", 1, 7)
+    GROUP BY SUBSTRING("date" FROM 1 FOR 7)
     ORDER BY period ASC`;
 
-  return rows.map((row) => ({ period: row.period, revenue: Number(row.revenue || 0) }));
+  return rows.map((row) => ({
+    period: row.period,
+    revenue: Number(row.revenue || 0),
+  }));
 }
 
 /** Adds `add` months to a "YYYY-MM" period string, keeping zero-padding. */
 function addMonths(period: string, add: number): string {
+  if (!period || !period.includes('-')) return period;
   const [year, month] = period.split('-').map(Number);
   const total = year * 12 + (month - 1) + add;
   const y = Math.floor(total / 12);
@@ -51,7 +60,6 @@ export async function getSalesForecast(monthsAhead = 3): Promise<ForecastPoint[]
   // Calculate fitted values over historical data
   for (let i = 0; i < history.length; i++) {
     const actual = history[i].revenue;
-    // For the first period, we assume prediction equals actual for visualization
     const predicted = i === 0 ? actual : L + T;
 
     if (i > 0) {
