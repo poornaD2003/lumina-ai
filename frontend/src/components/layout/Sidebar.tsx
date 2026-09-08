@@ -13,9 +13,9 @@ const links = [
 
 export default function Sidebar() {
   return (
-    <aside className="w-60 min-h-screen bg-slate-900 flex flex-col shrink-0">
+    <aside className="flex w-full shrink-0 flex-col bg-slate-900 lg:min-h-screen lg:w-60">
       {/* Brand */}
-      <div className="flex items-center gap-2.5 px-5 py-6 border-b border-slate-700/60">
+      <div className="flex items-center gap-2.5 border-b border-slate-700/60 px-4 py-4 sm:px-5 lg:py-6">
         <img src="/favicon.svg" alt="Lumina" className="w-8 h-8 rounded-lg" />
         <span className="font-semibold text-white tracking-tight text-[15px]">
           Lumina
@@ -23,14 +23,14 @@ export default function Sidebar() {
       </div>
 
       {/* Navigation */}
-      <nav className="flex flex-col gap-1 px-3 py-4">
+      <nav className="flex gap-1 overflow-x-auto px-3 py-3 lg:flex-col lg:overflow-visible lg:py-4">
         {links.map(({ to, label, icon: Icon }) => (
           <NavLink
             key={to}
             to={to}
             end={to === '/'}
             className={({ isActive }) =>
-              `flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${isActive
+              `flex shrink-0 items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${isActive
                 ? 'bg-slate-700/80 text-white'
                 : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
               }`
@@ -43,7 +43,7 @@ export default function Sidebar() {
       </nav>
 
       {/* Footer spacer */}
-      <div className="mt-auto px-5 py-4">
+      <div className="mt-auto hidden px-5 py-4 lg:block">
         <p className="text-slate-600 text-xs">Lumina v1.0.0</p>
       </div>
     </aside>

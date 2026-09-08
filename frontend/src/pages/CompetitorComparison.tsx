@@ -1,7 +1,7 @@
 // frontend/src/components/CompetitorComparison.tsx
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { RefreshCw, ExternalLink, TrendingUp, AlertCircle } from 'lucide-react';
+import { RefreshCw, ExternalLink, TrendingUp, AlertCircle, Search, SlidersHorizontal } from 'lucide-react';
 
 
 interface Competitor {
@@ -54,9 +54,9 @@ export const CompetitorComparisonPage: React.FC = () => {
     loadProducts();
   }, []);
 
-  if (loading) return <div className="p-6 text-slate-600">Loading products...</div>;
-  if (error) return <div className="p-6 text-red-600">{error}</div>;
-  if (products.length === 0) return <div className="p-6 text-slate-600">No products found.</div>;
+  if (loading) return <div className="rounded-2xl border border-slate-200 bg-white p-6 text-sm text-slate-600 shadow-sm">Loading products...</div>;
+  if (error) return <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-sm text-red-700">{error}</div>;
+  if (products.length === 0) return <div className="rounded-2xl border border-slate-200 bg-white p-6 text-sm text-slate-600 shadow-sm">No products found.</div>;
 
   const categories = Array.from(new Set(products.map((product) => product.category))).sort();
   const filteredProducts = products.filter((product) => {
@@ -70,48 +70,58 @@ export const CompetitorComparisonPage: React.FC = () => {
   });
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800">Competitor Comparison</h1>
-          <p className="text-sm text-slate-500">Compare each product with current market prices.</p>
+    <div className="mx-auto flex max-w-7xl flex-col gap-5 sm:gap-6">
+      <header className="rounded-2xl bg-slate-900 px-5 py-6 text-white shadow-sm sm:px-7 sm:py-7">
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-300">Market intelligence</p>
+            <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Competitor comparison</h1>
+            <p className="mt-2 max-w-xl text-sm text-slate-300">See how your prices sit against live retailer results and make sharper pricing decisions.</p>
+          </div>
+          <div className="flex items-center gap-2 text-xs text-slate-300">
+            <span className="h-2 w-2 rounded-full bg-emerald-400" />
+            {filteredProducts.length} of {products.length} products
+          </div>
         </div>
-        <div className="flex w-full flex-col gap-3 sm:max-w-xl sm:flex-row">
-          <label className="w-full sm:flex-1">
-            <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Find product</span>
+      </header>
+
+      <div className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:items-end sm:p-5">
+        <label className="min-w-0 flex-1">
+          <span className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500"><Search size={13} /> Find product</span>
+          <div className="relative">
             <input
               type="search"
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
               placeholder="Search name, brand, or category"
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+              className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
             />
-          </label>
-          <label className="w-full sm:w-48">
-            <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Category</span>
-            <select
-              value={selectedCategory}
-              onChange={(event) => setSelectedCategory(event.target.value)}
-              className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
-            >
-              <option value="all">All categories</option>
-              {categories.map((category) => (
-                <option key={category} value={category}>
-                  {category}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
+          </div>
+        </label>
+        <label className="w-full sm:w-52">
+          <span className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500"><SlidersHorizontal size={13} /> Category</span>
+          <select
+            value={selectedCategory}
+            onChange={(event) => setSelectedCategory(event.target.value)}
+            className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+          >
+            <option value="all">All categories</option>
+            {categories.map((category) => (
+              <option key={category} value={category}>
+                {category}
+              </option>
+            ))}
+          </select>
+        </label>
       </div>
       {filteredProducts.length > 0 ? (
-        <div className="grid gap-6 lg:grid-cols-2">
+        <div className="grid gap-5 xl:grid-cols-2">
           {filteredProducts.map((product) => (
-          <CompetitorComparisonCard key={product.id} product={product} />
+            <CompetitorComparisonCard key={product.id} product={product} />
           ))}
         </div>
       ) : (
-        <p className="rounded-lg border border-dashed border-slate-300 p-8 text-center text-sm text-slate-500">
+        <p className="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-500">
           No products match the selected filters.
         </p>
       )}
@@ -154,16 +164,16 @@ export const CompetitorComparisonCard: React.FC<Props> = ({ product }) => {
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-md border border-slate-200 p-6 max-w-2xl">
-      <div className="flex justify-between items-center mb-4">
-        <div>
-          <h3 className="text-lg font-bold text-slate-800">{product.name}</h3>
-          <p className="text-xs text-slate-500">Cost: LKR {product.costPrice.toLocaleString()} | Current: LKR {product.unitPrice.toLocaleString()}</p>
+    <article className="min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
+      <div className="flex flex-col gap-4 border-b border-slate-100 pb-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <h3 className="truncate text-lg font-bold text-slate-800">{product.name}</h3>
+          <p className="mt-1 text-xs text-slate-500">Cost: LKR {product.costPrice.toLocaleString()} <span className="px-1 text-slate-300">|</span> Current: LKR {product.unitPrice.toLocaleString()}</p>
         </div>
         <button
           onClick={fetchAnalysis}
           disabled={loading}
-          className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition"
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700 sm:w-auto"
         >
           <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           {loading ? 'Analyzing Market...' : 'Run Live Market Analysis'}
@@ -173,16 +183,16 @@ export const CompetitorComparisonCard: React.FC<Props> = ({ product }) => {
       {competitors.length > 0 && (
         <>
           {/* Competitor Market Comparison Badge & Table Section */}
-          <div className="mt-4 border-t pt-4">
-            <div className="flex items-center justify-between mb-3">
+          <div className="mt-4">
+            <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-800">
                 <TrendingUp className="w-3.5 h-3.5" /> Competitor Market Comparison
               </span>
               <span className="text-xs text-slate-400">Live retailer results</span>
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm text-slate-600 border border-slate-100 rounded-lg">
+            <div className="hidden overflow-x-auto rounded-xl border border-slate-100 sm:block">
+              <table className="w-full min-w-130 text-left text-sm text-slate-600">
                 <thead className="bg-slate-50 text-slate-700 font-semibold text-xs uppercase">
                   <tr>
                     <th className="p-2.5">Store</th>
@@ -211,12 +221,28 @@ export const CompetitorComparisonCard: React.FC<Props> = ({ product }) => {
                 </tbody>
               </table>
             </div>
+            <div className="space-y-2 sm:hidden">
+              {competitors.map((comp, idx) => (
+                <div key={idx} className="rounded-xl border border-slate-100 bg-slate-50 p-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-slate-900">{comp.storeName}</p>
+                      <a href={comp.url} target="_blank" rel="noreferrer" className="mt-1 flex items-start gap-1 text-xs text-slate-500 hover:text-emerald-700">
+                        <span className="line-clamp-2">{comp.productTitle}</span><ExternalLink className="mt-0.5 h-3 w-3 shrink-0" />
+                      </a>
+                    </div>
+                    <p className="shrink-0 text-sm font-bold text-slate-800">LKR {comp.price.toLocaleString()}</p>
+                  </div>
+                  <p className="mt-2 text-[11px] font-semibold uppercase tracking-wide text-emerald-700">Live source</p>
+                </div>
+              ))}
+            </div>
           </div>
 
           {/* AI Recommended Price Badge Section */}
           {aiResult && (
-            <div className="mt-5 p-4 rounded-xl bg-emerald-50 border border-emerald-200">
-              <div className="flex justify-between items-center mb-2">
+            <div className="mt-5 rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <span className="text-xs font-bold tracking-wider text-emerald-800 uppercase">
                   Gemini AI Recommended Selling Price
                 </span>
@@ -224,7 +250,7 @@ export const CompetitorComparisonCard: React.FC<Props> = ({ product }) => {
                   +{aiResult.recommendedMarginPercent}% Margin
                 </span>
               </div>
-              <div className="text-2xl font-black text-emerald-900 mb-1">
+              <div className="mb-1 text-2xl font-black text-emerald-900">
                 LKR {aiResult.suggestedPrice?.toLocaleString()}
               </div>
               <p className="text-xs text-emerald-700 flex items-start gap-1">
@@ -241,6 +267,6 @@ export const CompetitorComparisonCard: React.FC<Props> = ({ product }) => {
           No live prices were returned by the retailers for this product. Try the analysis again later.
         </p>
       )}
-    </div>
+    </article>
   );
 };
