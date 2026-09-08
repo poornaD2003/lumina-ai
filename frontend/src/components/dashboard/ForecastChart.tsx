@@ -53,7 +53,7 @@ export default function ForecastChart({ data }: Props) {
             width={54}
           />
           <Tooltip
-            formatter={(value: number) => [`LKR ${value.toLocaleString()}`, 'Revenue']}
+            formatter={(value) => typeof value === 'number' ? `LKR ${value.toLocaleString()}` : value}
            
             contentStyle={{
               borderRadius: 8,
