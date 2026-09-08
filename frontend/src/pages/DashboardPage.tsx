@@ -35,6 +35,15 @@ function Skeleton({ className = '' }: { className?: string }) {
   );
 }
 
+function ChartState({ title, message }: { title: string; message: string }) {
+  return (
+    <div className="flex min-h-80 flex-col rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
+      <h3 className="text-sm font-semibold text-gray-700">{title}</h3>
+      <p className="flex flex-1 items-center justify-center text-sm text-gray-400">{message}</p>
+    </div>
+  );
+}
+
 export default function DashboardPage() {
   const kpis = useAnalytics('kpis', fetchKPIs);
   const sales = useAnalytics('sales-summary', fetchSalesSummary);
@@ -129,48 +138,69 @@ export default function DashboardPage() {
         )}
       </section>
 
-      {/* Row 2: Sales + Forecast */}
+      {/* Core analytics: always keep the four requested dashboard views visible. */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {sales.isLoading ? (
           <Skeleton className="h-80" />
+        ) : sales.isError ? (
+          <ChartState title="Sales Trend" message="Unable to load sales trend data." />
         ) : sales.data ? (
           <SalesChart data={sales.data} />
-        ) : null}
+        ) : (
+          <ChartState title="Sales Trend" message="No sales trend data yet." />
+        )}
 
         {forecast.isLoading ? (
           <Skeleton className="h-80" />
+        ) : forecast.isError ? (
+          <ChartState title="Sales Forecast" message="Unable to load sales forecast data." />
         ) : forecast.data ? (
           <ForecastChart data={forecast.data} />
-        ) : null}
+        ) : (
+          <ChartState title="Sales Forecast" message="No sales forecast data yet." />
+        )}
       </div>
 
-      {/* Row 3: Customers + Products */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {products.isLoading ? (
+          <Skeleton className="h-80" />
+        ) : products.isError ? (
+          <ChartState title="Top Products by Revenue" message="Unable to load product revenue data." />
+        ) : products.data ? (
+          <ProductChart data={products.data} />
+        ) : (
+          <ChartState title="Top Products by Revenue" message="No product revenue data yet." />
+        )}
+
+        {financials.isLoading ? (
+          <Skeleton className="h-80" />
+        ) : financials.isError ? (
+          <ChartState title="Financial Overview" message="Unable to load financial overview data." />
+        ) : financials.data ? (
+          <FinancialChart data={financials.data} />
+        ) : (
+          <ChartState title="Financial Overview" message="No financial overview data yet." />
+        )}
+      </div>
+
+      {/* Supporting analytics */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {segments.isLoading ? (
           <Skeleton className="h-80" />
         ) : segments.data ? (
           <CustomerChart data={segments.data} />
-        ) : null}
+        ) : (
+          <ChartState title="Customer Segments" message="No customer segment data yet." />
+        )}
 
-        {products.isLoading ? (
+        {dailyNetProfit.isLoading ? (
           <Skeleton className="h-80" />
-        ) : products.data ? (
-          <ProductChart data={products.data} />
-        ) : null}
+        ) : dailyNetProfit.data ? (
+          <DailyNetProfitChart data={dailyNetProfit.data} />
+        ) : (
+          <ChartState title="Daily Net Profit History" message="No daily profit data yet." />
+        )}
       </div>
-
-      {/* Row 4: Financial */}
-      {financials.isLoading ? (
-        <Skeleton className="h-80" />
-      ) : financials.data ? (
-        <FinancialChart data={financials.data} />
-      ) : null}
-
-      {dailyNetProfit.isLoading ? (
-        <Skeleton className="h-80" />
-      ) : dailyNetProfit.data ? (
-        <DailyNetProfitChart data={dailyNetProfit.data} />
-      ) : null}
     </div>
   );
 }
