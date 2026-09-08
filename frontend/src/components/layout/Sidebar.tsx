@@ -1,5 +1,6 @@
+import { useEffect, useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, MessageSquare, Package, Boxes, FileUp } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, Package, Boxes, FileUp, Moon, Sun } from 'lucide-react';
 import { Calculator } from 'lucide-react';
 
 const links = [
@@ -13,6 +14,13 @@ const links = [
 ];
 
 export default function Sidebar() {
+  const [darkMode, setDarkMode] = useState(() => localStorage.getItem('lumina-theme') === 'dark');
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', darkMode);
+    localStorage.setItem('lumina-theme', darkMode ? 'dark' : 'light');
+  }, [darkMode]);
+
   return (
     <aside className="flex w-full shrink-0 flex-col bg-slate-900 lg:min-h-screen lg:w-60">
       {/* Brand */}
@@ -42,6 +50,17 @@ export default function Sidebar() {
           </NavLink>
         ))}
       </nav>
+
+      <button
+        type="button"
+        onClick={() => setDarkMode((current) => !current)}
+        title={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+        aria-label={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+        className="mx-3 mb-3 flex shrink-0 items-center justify-center gap-2 rounded-lg border border-slate-700 px-3 py-2 text-xs font-semibold text-slate-300 transition hover:bg-slate-800 hover:text-white lg:justify-start"
+      >
+        {darkMode ? <Sun size={15} /> : <Moon size={15} />}
+        <span>{darkMode ? 'Light mode' : 'Dark mode'}</span>
+      </button>
 
       {/* Footer spacer */}
       <div className="mt-auto hidden px-5 py-4 lg:block">

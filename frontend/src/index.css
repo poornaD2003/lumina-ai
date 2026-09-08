@@ -1,1 +1,76 @@
 @import "tailwindcss";
+
+html {
+	color-scheme: light;
+}
+
+html.dark {
+	color-scheme: dark;
+}
+
+/* Existing pages use utility classes directly. These shared overrides keep
+	 the theme consistent without duplicating dark variants in every screen. */
+.dark body,
+.dark .bg-gray-50 {
+	background-color: #0f172a;
+}
+
+.dark .bg-white {
+	background-color: #1e293b;
+}
+
+.dark .bg-gray-100,
+.dark .bg-slate-50 {
+	background-color: #273449;
+}
+
+.dark .text-gray-900,
+.dark .text-gray-800,
+.dark .text-slate-900,
+.dark .text-slate-800 {
+	color: #f8fafc;
+}
+
+.dark .text-gray-700,
+.dark .text-gray-600,
+.dark .text-slate-700,
+.dark .text-slate-600 {
+	color: #cbd5e1;
+}
+
+.dark .text-gray-500,
+.dark .text-slate-500,
+.dark .text-slate-400 {
+	color: #94a3b8;
+}
+
+.dark .border-gray-100,
+.dark .border-gray-200,
+.dark .border-slate-100,
+.dark .border-slate-200,
+.dark .border-slate-300 {
+	border-color: #334155;
+}
+
+.dark input,
+.dark select,
+.dark textarea {
+	background-color: #1e293b;
+	border-color: #475569;
+	color: #f8fafc;
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+	color: #94a3b8;
+}
+
+.dark .hover\:bg-gray-50:hover,
+.dark .hover\:bg-slate-50:hover {
+	background-color: #334155;
+}
+
+.dark .divide-gray-100 > :not(:last-child),
+.dark .divide-slate-100 > :not(:last-child) {
+	border-color: #334155;
+}

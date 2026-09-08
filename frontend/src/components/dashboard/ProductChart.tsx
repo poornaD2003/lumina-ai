@@ -13,12 +13,6 @@ interface Props {
   data: ProductPerformance[];
 }
 
-function formatRevenue(value: number) {
-  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
-  if (value >= 1_000) return `${(value / 1_000).toFixed(0)}K`;
-  return `${value}`;
-}
-
 export default function ProductChart({ data }: Props) {
   const chartData = [...data]
     .sort((a, b) => b.totalRevenue - a.totalRevenue)

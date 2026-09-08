@@ -91,8 +91,8 @@ export async function saveDailyProductProfits(
 
 export async function getKPIs(): Promise<KPIData> {
   const [salesAgg, activeCustomers, topProductRows, topRegionRows] = await Promise.all([
-    prisma.sale.aggregate({
-      _sum: { totalAmount: true },
+    prisma.dailyNetProfit.aggregate({
+      _sum: { revenue: true },
       _count: true,
     }),
     prisma.customer.count({ where: { isActive: true } }),
@@ -111,7 +111,7 @@ export async function getKPIs(): Promise<KPIData> {
       LIMIT 1`,
   ]);
 
-  const totalRevenue = salesAgg._sum.totalAmount ?? 0;
+  const totalRevenue = salesAgg._sum.revenue ?? 0;
   const totalOrders = salesAgg._count;
 
   return {
