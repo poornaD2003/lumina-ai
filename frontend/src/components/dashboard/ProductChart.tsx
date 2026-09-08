@@ -14,9 +14,9 @@ interface Props {
 }
 
 function formatRevenue(value: number) {
-  if (value >= 1_000_000) return `$${(value / 1_000_000).toFixed(1)}M`;
-  if (value >= 1_000) return `$${(value / 1_000).toFixed(0)}K`;
-  return `$${value}`;
+  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
+  if (value >= 1_000) return `${(value / 1_000).toFixed(0)}K`;
+  return `${value}`;
 }
 
 export default function ProductChart({ data }: Props) {
@@ -36,8 +36,9 @@ export default function ProductChart({ data }: Props) {
         >
           <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" horizontal={false} />
           <XAxis
+          tickFormatter={(value) => `LKR ${(value / 100000).toFixed(1)}L`}
             type="number"
-            tickFormatter={formatRevenue}
+            
             tick={{ fontSize: 11, fill: '#94a3b8' }}
             axisLine={false}
             tickLine={false}
@@ -51,7 +52,8 @@ export default function ProductChart({ data }: Props) {
             width={110}
           />
           <Tooltip
-            formatter={(value) => [formatRevenue(Number(value)), 'Revenue']}
+            formatter={(value) => typeof value === 'number' ? `LKR ${value.toLocaleString()}` : value}
+
             contentStyle={{
               borderRadius: 8,
               border: '1px solid #e2e8f0',
