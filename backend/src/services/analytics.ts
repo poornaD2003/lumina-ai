@@ -168,7 +168,7 @@ export async function getSalesSummary(months = 12): Promise<SalesSummary[]> {
 /* -------------------------------------------------------------------------- */
 
 export async function getCustomerSegments(): Promise<CustomerSegment[]> {
-  // FIXED SQL 42803: Added seg."totalRevenue" to GROUP BY clause
+  // Clean Subquery Aggregation logic
   const rows = await prisma.$queryRaw<
     Array<{
       segment: string;
@@ -183,7 +183,7 @@ export async function getCustomerSegments(): Promise<CustomerSegment[]> {
       COUNT(*)::int AS count,
       SUM(c."lifetimeValue")::float AS "totalLTV",
       AVG(c."lifetimeValue")::float AS "avgLTV",
-      COALESCE(seg."totalRevenue", 0)::float AS "totalRevenue"
+      COALESCE(MAX(seg."totalRevenue"), 0)::float AS "totalRevenue"
     FROM "Customer" c
     LEFT JOIN (
       SELECT cu.segment AS seg, SUM(s."totalAmount") AS "totalRevenue"
@@ -191,7 +191,7 @@ export async function getCustomerSegments(): Promise<CustomerSegment[]> {
       JOIN "Customer" cu ON cu.id = s."customerId"
       GROUP BY cu.segment
     ) seg ON seg.seg = c.segment
-    GROUP BY c.segment, seg."totalRevenue"
+    GROUP BY c.segment
     ORDER BY "totalRevenue" DESC`;
 
   return rows.map((row) => ({
@@ -311,25 +311,28 @@ export async function getSalesByRegion(): Promise<RegionSales[]> {
 /* -------------------------------------------------------------------------- */
 
 export async function getInventoryAlerts() {
-  const products = await prisma.product.findMany({
-    where: {
-      stockQuantity: {
-        lte: prisma.product.fields.reorderLevel,
-      },
-    },
-    orderBy: { stockQuantity: 'asc' },
-    select: {
-      name: true,
-      sku: true,
-      stockQuantity: true,
-      reorderLevel: true,
-    },
-  });
+  // Raw SQL query for comparing two columns in the same database table
+  const products = await prisma.$queryRaw<
+    Array<{
+      productName: string;
+      sku: string;
+      stockQuantity: number;
+      reorderLevel: number;
+    }>
+  >`
+    SELECT 
+      name AS "productName",
+      sku,
+      "stockQuantity",
+      "reorderLevel"
+    FROM "Product"
+    WHERE "stockQuantity" <= "reorderLevel"
+    ORDER BY "stockQuantity" ASC`;
 
   return products.map((product) => ({
-    productName: product.name,
+    productName: product.productName,
     sku: product.sku,
-    stockQuantity: product.stockQuantity,
-    reorderLevel: product.reorderLevel,
+    stockQuantity: Number(product.stockQuantity ?? 0),
+    reorderLevel: Number(product.reorderLevel ?? 0),
   }));
 }

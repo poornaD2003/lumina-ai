@@ -11,15 +11,16 @@ const round2 = (n: number): number => Math.round(n * 100) / 100;
 
 /** Monthly revenue for every month that has sales, oldest first. */
 async function getMonthlyRevenue(): Promise<Array<{ period: string; revenue: number }>> {
+  // `date` field එක String නිසා SUBSTRING("date", 1, 7) මගින් "YYYY-MM" කොටස වෙන් කරගනියි.
   const rows = await prisma.$queryRaw<Array<{ period: string; revenue: number }>>`
     SELECT
-      TO_CHAR("saleDate", 'YYYY-MM') AS period,
-      SUM("totalAmount") AS revenue
-    FROM "Sale"
-    GROUP BY TO_CHAR("saleDate", 'YYYY-MM')
+      SUBSTRING("date", 1, 7) AS period,
+      SUM("revenue") AS revenue
+    FROM "DailyNetProfit"
+    GROUP BY SUBSTRING("date", 1, 7)
     ORDER BY period ASC`;
 
-  return rows.map((row) => ({ period: row.period, revenue: Number(row.revenue) }));
+  return rows.map((row) => ({ period: row.period, revenue: Number(row.revenue || 0) }));
 }
 
 /** Adds `add` months to a "YYYY-MM" period string, keeping zero-padding. */
