@@ -20,8 +20,12 @@ dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 const envUrl = process.env.DATABASE_URL ?? 'file:./dev.db';
 const dbFile = envUrl.replace(/^file:/, '');
 
+// Support absolute paths (e.g. file:/data/dev.db for production volumes)
+// and relative paths (e.g. file:./dev.db for local development)
+const dbPath = path.isAbsolute(dbFile) ? dbFile : path.resolve(__dirname, '../../prisma', dbFile);
+
 const adapter = new PrismaBetterSqlite3({
-  url: `file:${path.resolve(__dirname, '../../prisma', dbFile)}`,
+  url: `file:${dbPath}`,
 });
 
 export const prisma = new PrismaClient({ adapter });

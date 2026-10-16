@@ -21,12 +21,10 @@ import {
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// CORS setup to allow Vercel Frontend & Localhost
 app.use(cors({
-  origin: '*', // Vercel සහ Localhost දෙකටම සපෝට් කරයි
-  credentials: true
+  origin: process.env.NODE_ENV === 'production' ? true : 'http://localhost:5173',
+  credentials: true,
 }));
-
 app.use(express.json());
 
 // Root health check route (FIXED: Placed before error handler & routes)
@@ -60,6 +58,13 @@ app.post('/api/restock-plan/orders/:id/cancel', cancelPurchaseOrder);
 
 // Error handler (MUST be the last middleware)
 app.use(errorHandler);
+
+// Serve frontend static files in production
+const frontendDist = path.resolve(__dirname, '../../frontend/dist');
+app.use(express.static(frontendDist));
+app.get('/{*splat}', (_req, res) => {
+  res.sendFile(path.join(frontendDist, 'index.html'));
+});
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

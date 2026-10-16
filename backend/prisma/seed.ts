@@ -18,13 +18,13 @@ import path from 'path';
 // Load .env from the project root (same convention as src/index.ts)
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
-// DATABASE_URL is a relative SQLite path ("file:./dev.db") – resolve it against
-// this script's directory (prisma/), the same way the Prisma CLI resolves it.
+// DATABASE_URL can be relative ("file:./dev.db") or absolute ("file:/data/dev.db")
 const envUrl = process.env.DATABASE_URL ?? 'file:./dev.db';
 const dbFile = envUrl.replace(/^file:/, '');
+const dbPath = path.isAbsolute(dbFile) ? dbFile : path.resolve(__dirname, dbFile);
 
 const adapter = new PrismaBetterSqlite3({
-  url: `file:${path.resolve(__dirname, dbFile)}`,
+  url: `file:${dbPath}`,
 });
 const prisma = new PrismaClient({ adapter });
 
